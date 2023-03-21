@@ -71,6 +71,10 @@ dependencies {
     // MediaPipe Library
     implementation("com.google.mediapipe:tasks-vision:0.1.0-alpha-5")
 
+    // MlKit libraries (still need for pose- and face- landmarks)
+    implementation("com.google.mlkit:pose-detection-accurate:18.0.0-beta3")
+    implementation("com.google.mlkit:face-mesh-detection:16.0.0-beta1")
+
     // Accompanist
     val accompanistPermissionsVersion = "0.23.1"
     implementation("com.google.accompanist:accompanist-permissions:$accompanistPermissionsVersion")
