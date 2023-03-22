@@ -23,15 +23,12 @@ import com.google.accompanist.permissions.PermissionRequired
 import com.google.accompanist.permissions.rememberPermissionState
 import com.google.mediapipe.tasks.vision.core.RunningMode
 import com.google.mlkit.common.MlKitException
-import com.google.mlkit.vision.pose.accurate.AccuratePoseDetectorOptions
-import org.landmarkscollector.mlkit.posedetector.PoseDetectorProcessor
 import org.landmarkscollector.hands.HandLandmarkerHelper
 import org.landmarkscollector.hands.LandmarkerListener
 import org.landmarkscollector.hands.OverlayView
 import org.landmarkscollector.hands.ResultBundle
 import org.landmarkscollector.mlkit.GraphicOverlay
-import org.landmarkscollector.mlkit.VisionImageProcessor
-import org.landmarkscollector.mlkit.facemeshdetector.FaceMeshDetectorProcessor
+import org.landmarkscollector.mlkit.detectors.DetectorProcessor
 import java.util.concurrent.Executors
 import kotlin.coroutines.resume
 import kotlin.coroutines.suspendCoroutine
@@ -67,7 +64,7 @@ fun CameraScreen() {
 
         LaunchedEffect(previewView) {
             lateinit var handLandmarkerHelper: HandLandmarkerHelper
-            lateinit var imageProcessors: List<VisionImageProcessor>
+            lateinit var detectorProcessor: DetectorProcessor
             val backgroundExecutor = Executors.newSingleThreadExecutor()
             backgroundExecutor.execute {
                 handLandmarkerHelper = HandLandmarkerHelper(context, object : LandmarkerListener {
@@ -92,19 +89,7 @@ fun CameraScreen() {
                 })
             }
 
-            imageProcessors = listOf(
-                FaceMeshDetectorProcessor(context),
-                PoseDetectorProcessor(
-                    context = context,
-                    //TODO change config
-                    options = AccuratePoseDetectorOptions.Builder()//PoseDetectorOptions.Builder()
-                        .setDetectorMode(AccuratePoseDetectorOptions.STREAM_MODE)//PoseDetectorOptions.STREAM_MODE)
-                        .setPreferredHardwareConfigs(AccuratePoseDetectorOptions.CPU_GPU)//PoseDetectorOptions.CPU_GPU)
-                        .build(),
-                    visualizeZ = true,
-                    rescaleZForVisualization = true
-                )
-            )
+            detectorProcessor = DetectorProcessor(context)
 
             with(suspendCoroutine { continuation ->
                 ProcessCameraProvider.getInstance(context).also { future ->
@@ -135,12 +120,10 @@ fun CameraScreen() {
                         // The analyzer can then be assigned to the instance
                         .apply {
                             setAnalyzer(backgroundExecutor) { imageProxy ->
-                                /*
                                 handLandmarkerHelper.detectLiveStream(
                                     imageProxy = imageProxy,
                                     isFrontCamera = cameraSelector.value == CameraSelector.DEFAULT_FRONT_CAMERA
                                 )
-                                 */
                                 if (needUpdateGraphicOverlayImageSourceInfo) {
                                     val isImageFlipped =
                                         true//TODOlensFacing == CameraSelector.LENS_FACING_FRONT
@@ -161,7 +144,7 @@ fun CameraScreen() {
                                     needUpdateGraphicOverlayImageSourceInfo = false
                                 }
                                 try {
-                                    imageProcessors.first()
+                                    detectorProcessor
                                         .processImageProxy(imageProxy, graphicOverlay)
                                 } catch (e: MlKitException) {
                                     Log.e(

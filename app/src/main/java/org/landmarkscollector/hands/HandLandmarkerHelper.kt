@@ -14,6 +14,7 @@ import com.google.mediapipe.tasks.core.Delegate
 import com.google.mediapipe.tasks.vision.core.RunningMode
 import com.google.mediapipe.tasks.vision.handlandmarker.HandLandmarker
 import com.google.mediapipe.tasks.vision.handlandmarker.HandLandmarkerResult
+import org.landmarkscollector.hands.BitmapUtils.getBitmap
 
 private const val MP_HAND_LANDMARKER_TASK = "hand_landmarker.task"
 private const val TAG = "HandLandmarkerHelper"
@@ -95,36 +96,10 @@ class HandLandmarkerHelper(
     ) {
         val frameTime = SystemClock.uptimeMillis()
 
-        // Copy out RGB bits from the frame to a bitmap buffer
-        val bitmapBuffer =
-            Bitmap.createBitmap(
-                imageProxy.width,
-                imageProxy.height,
-                Bitmap.Config.ARGB_8888
-            )
-        imageProxy.use { bitmapBuffer.copyPixelsFromBuffer(imageProxy.planes[0].buffer) }
-
-        val matrix = Matrix().apply {
-            // Rotate the frame received from the camera to be in the same direction as it'll be shown
-            postRotate(imageProxy.imageInfo.rotationDegrees.toFloat())
-
-            // flip image if user use front camera
-            if (isFrontCamera) {
-                postScale(
-                    -1f,
-                    1f,
-                    imageProxy.width.toFloat(),
-                    imageProxy.height.toFloat()
-                )
-            }
-        }
-        val rotatedBitmap = Bitmap.createBitmap(
-            bitmapBuffer, 0, 0, bitmapBuffer.width, bitmapBuffer.height,
-            matrix, true
-        )
-
         // Convert the input Bitmap object to an MPImage object to run inference
-        val mpImage = BitmapImageBuilder(rotatedBitmap).build()
+        val mpImage = BitmapImageBuilder(
+            getBitmap(imageProxy, isFrontCamera)
+        ).build()
 
         detectAsync(mpImage, frameTime)
     }
@@ -142,13 +117,9 @@ class HandLandmarkerHelper(
         result: HandLandmarkerResult,
         input: MPImage
     ) {
-        val finishTimeMs = SystemClock.uptimeMillis()
-        val inferenceTime = finishTimeMs - result.timestampMs()
-
         landmarkerListener.onResults(
             ResultBundle(
                 result,
-                inferenceTime,
                 input.height,
                 input.width
             )

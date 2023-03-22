@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.landmarkscollector.mlkit.facemeshdetector
+package org.landmarkscollector.mlkit.face
 
 import android.graphics.Canvas
 import android.graphics.Color
