@@ -46,11 +46,12 @@ import kotlin.coroutines.resume
 import kotlin.coroutines.suspendCoroutine
 import kotlin.time.Duration.Companion.seconds
 
-const val FRAMES_SECS = 10
+const val DELAY_SECS = 3
+const val GESTURES_NUM = 10
+const val MAX_FRAMES_SECS = 5
 
 @OptIn(
     ExperimentalPermissionsApi::class, ExperimentalMaterial3Api::class,
-    ExperimentalComposeUiApi::class
 )
 @Composable
 fun CameraScreen(
@@ -206,18 +207,41 @@ fun CameraScreen(
                 )
                 Column {
                     val timerScope = rememberCoroutineScope()
-                    var timerTicks by remember { mutableStateOf(FRAMES_SECS) }
-                    Text("Timer: $timerTicks", fontSize = 25.sp)
-                    Button(onClick = {
-                        timerScope.launch {
-                            timerTicks = FRAMES_SECS
-                            while (timerTicks > 0) {
-                                delay(1.seconds)
-                                timerTicks--
+
+                    var timerDelayTicks by remember { mutableStateOf(DELAY_SECS) }
+                    var timerTicks by remember { mutableStateOf(0) }
+                    var gesturesNum by remember { mutableStateOf(0) }
+                    var isRecordingOn by remember { mutableStateOf(false) }
+
+                    if (timerDelayTicks > 0) {
+                        Text("⏱️Recording will start in: $timerDelayTicks", fontSize = 25.sp)
+                    } else {
+                        Text("\uD83D\uDD34 Live: Recording", fontSize = 25.sp)
+                    }
+                    Text("Time seconds left: $timerTicks", fontSize = 25.sp)
+                    Text("Gesture #: $gesturesNum", fontSize = 25.sp)
+                    Button(
+                        enabled = isRecordingOn.not(),
+                        onClick = {
+                            timerScope.launch {
+                                isRecordingOn = true
+                                while (gesturesNum < GESTURES_NUM) {
+                                    timerDelayTicks = DELAY_SECS
+                                    timerTicks = MAX_FRAMES_SECS
+                                    while (timerDelayTicks > 0) {
+                                        delay(1.seconds)
+                                        timerDelayTicks--
+                                    }
+                                    while (timerTicks > 0) {
+                                        delay(1.seconds)
+                                        timerTicks--
+                                    }
+                                    gesturesNum++
+                                }
+                                isRecordingOn = false
                             }
-                        }
-                    }) {
-                        Text("Start Timer", fontSize = 25.sp)
+                        }) {
+                        Text("Start Recording", fontSize = 25.sp)
                     }
                     val gestureName by viewModel.currentGesture.collectAsState()
                     val focusManager = LocalFocusManager.current
