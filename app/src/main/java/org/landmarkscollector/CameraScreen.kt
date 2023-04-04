@@ -96,6 +96,7 @@ fun CameraScreen(
 
                     override fun onResults(resultBundle: ResultBundle) {
                         ContextCompat.getMainExecutor(context).execute {
+                            viewModel.onHandResults(resultBundle.result)
                             with(overlayView) {
                                 setResults(
                                     handLandmarkerResults = resultBundle.result,
