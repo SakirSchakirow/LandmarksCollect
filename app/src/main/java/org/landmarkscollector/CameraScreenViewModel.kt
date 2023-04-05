@@ -1,6 +1,5 @@
 package org.landmarkscollector
 
-import android.util.Log
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import com.google.mediapipe.tasks.components.containers.NormalizedLandmark
@@ -8,6 +7,7 @@ import com.google.mediapipe.tasks.vision.handlandmarker.HandLandmarkerResult
 import com.google.mlkit.vision.facemesh.FaceMeshPoint
 import com.google.mlkit.vision.pose.PoseLandmark
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.combine
 import org.landmarkscollector.data.CsvRow
 import org.landmarkscollector.data.Landmark
 import org.landmarkscollector.data.Landmark.Face
@@ -22,38 +22,81 @@ class CameraScreenViewModel(
 
     companion object {
         private const val KEY_GESTURE = "KEY_GESTURE"
+        private const val KEY_IS_RECORDING_ON = "KEY_IS_RECORDING_ON"
+        private const val KEY_GESTURE_NUM = "KEY_GESTURE_NUM"
     }
 
-    private val csvRows: List<CsvRow>? = null
+    private var facePoseFrame = 0
+    private val csvRowsFacePose = HashMap<String, CsvRow>()
+    private var handsFrame = 0
+    private val csvRowsHands = HashMap<String, CsvRow>()
+
     val currentGesture: StateFlow<String?> = savedStateHandle.getStateFlow(KEY_GESTURE, null)
+
     fun setGestureName(name: String) {
         savedStateHandle[KEY_GESTURE] = name
     }
 
-    fun onFacePoseResults(result: DetectorResult) {
-        val poseLandmarks = result.pose.allPoseLandmarks
-            .map(::toLandmark)
-        val faceLandmarks = result.faces.firstOrNull()
-            ?.allPoints
-            ?.map(::toLandmark)
+    val isRecordingOn: StateFlow<Boolean> =
+        savedStateHandle.getStateFlow(KEY_IS_RECORDING_ON, false)
 
-        Log.d("OnMediapipePose: ", "Count: ${poseLandmarks.size}")
-        Log.d("OnMediapipeFace: ", "Count: ${faceLandmarks?.size ?: 0}")
+    val isRecordingButtonDisabled = isRecordingOn.combine(currentGesture) { isOn, gesture ->
+        isOn || gesture.isNullOrBlank()
     }
 
-    fun onHandResults(handLandmarkerResult: HandLandmarkerResult) {
-        val landmarks = handLandmarkerResult.landmarks()
-        val handednesses = handLandmarkerResult.handednesses()
-        landmarks.mapIndexed { index, normalizedLandmarks ->
-            val handedness = handednesses.getOrNull(index)?.firstOrNull()
-            requireNotNull(handedness) { "Both info on landmarks and handedness should be available" }
-            val marks = normalizedLandmarks.getLandmarks(handedness.categoryName() == "Right")
-            Log.d("OnMediapipeHand: ", marks.toString())
+    val gesturesNum: StateFlow<Int> = savedStateHandle.getStateFlow(KEY_GESTURE_NUM, 0)
+    fun setGesturesNum(gesturesNum: Int) {
+        savedStateHandle[KEY_GESTURE_NUM] = gesturesNum
+        //save csv file
+        saveCsvFile()
+    }
+
+    fun setIsRecordingOn(isOn: Boolean) {
+        savedStateHandle[KEY_IS_RECORDING_ON] = isOn
+    }
+
+    fun onFacePoseResults(result: DetectorResult) {
+        if (isRecordingOn.value) {
+            val poseLandmarks = result.pose.allPoseLandmarks
+                .map(::toLandmark)
+            val faceLandmarks = result.faces.firstOrNull()
+                ?.allPoints
+                ?.map(::toLandmark)
+
+            val frame = facePoseFrame++
+            csvRowsFacePose.putAll(
+                poseLandmarks.map { landmark ->
+                    landmark.toCsvRow(frame)
+                }.associateBy(CsvRow::rowId)
+            )
+            faceLandmarks?.map { landmark ->
+                landmark.toCsvRow(frame)
+            }?.associateBy(CsvRow::rowId)
+                ?.let(csvRowsFacePose::putAll)
         }
     }
 
-    private fun toLandmark(poseLandmark: PoseLandmark) {
-        with(poseLandmark.position3D) {
+    fun onHandResults(handLandmarkerResult: HandLandmarkerResult) {
+        if (isRecordingOn.value) {
+            val landmarks = handLandmarkerResult.landmarks()
+            val handednesses = handLandmarkerResult.handednesses()
+            landmarks.mapIndexed { index, normalizedLandmarks ->
+                val handedness = handednesses.getOrNull(index)?.firstOrNull()
+                requireNotNull(handedness) { "Both info on landmarks and handedness should be available" }
+                val marks = normalizedLandmarks.getLandmarks(handedness.categoryName() == "Right")
+
+                val frame = handsFrame++
+                csvRowsHands.putAll(
+                    marks.map { mark ->
+                        mark.toCsvRow(frame)
+                    }.associateBy(CsvRow::rowId)
+                )
+            }
+        }
+    }
+
+    private fun toLandmark(poseLandmark: PoseLandmark): Landmark {
+        return with(poseLandmark.position3D) {
             Pose(poseLandmark.landmarkType, x, y, z)
         }
     }
@@ -90,5 +133,9 @@ class CameraScreenViewModel(
             y = y,
             z = z
         )
+    }
+
+    private fun saveCsvFile() {
+        //TODO
     }
 }

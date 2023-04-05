@@ -218,8 +218,11 @@ fun CameraScreen(
 
                     var timerDelayTicks by remember { mutableStateOf(DELAY_SECS) }
                     var timerTicks by remember { mutableStateOf(0) }
-                    var gesturesNum by remember { mutableStateOf(0) }
-                    var isRecordingOn by remember { mutableStateOf(false) }
+                    val gesturesNum by viewModel.gesturesNum.collectAsState(initial = 0)
+                    val isRecordingButtonDisabled by viewModel.isRecordingButtonDisabled
+                        .collectAsState(
+                            initial = false
+                        )
 
                     if (timerDelayTicks > 0) {
                         Text("⏱️Recording will start in: $timerDelayTicks", fontSize = 25.sp)
@@ -229,10 +232,10 @@ fun CameraScreen(
                     Text("Time seconds left: $timerTicks", fontSize = 25.sp)
                     Text("Gesture #: $gesturesNum", fontSize = 25.sp)
                     Button(
-                        enabled = isRecordingOn.not(),
+                        enabled = isRecordingButtonDisabled.not(),
                         onClick = {
                             timerScope.launch {
-                                isRecordingOn = true
+                                viewModel.setIsRecordingOn(true)
                                 while (gesturesNum < GESTURES_NUM) {
                                     timerDelayTicks = DELAY_SECS
                                     timerTicks = MAX_FRAMES_SECS
@@ -244,9 +247,9 @@ fun CameraScreen(
                                         delay(1.seconds)
                                         timerTicks--
                                     }
-                                    gesturesNum++
+                                    viewModel.setGesturesNum(gesturesNum + 1)
                                 }
-                                isRecordingOn = false
+                                viewModel.setIsRecordingOn(false)
                             }
                         }) {
                         Text("Start Recording", fontSize = 25.sp)
