@@ -9,7 +9,7 @@ android {
 
     defaultConfig {
         applicationId = "org.landmarkscollector"
-        minSdk = 24
+        minSdk = 25
         targetSdk = 33
         versionCode = 1
         versionName = "1.0"
@@ -78,6 +78,10 @@ dependencies {
     // Accompanist
     val accompanistPermissionsVersion = "0.23.1"
     implementation("com.google.accompanist:accompanist-permissions:$accompanistPermissionsVersion")
+
+    implementation("com.opencsv:opencsv:5.7.0")
+
+    implementation("androidx.documentfile:documentfile:1.0.1")
 
     testImplementation("junit:junit:4.13.2")
     androidTestImplementation("androidx.test.ext:junit:1.1.5")

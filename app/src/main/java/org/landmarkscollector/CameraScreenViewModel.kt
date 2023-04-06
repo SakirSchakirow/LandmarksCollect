@@ -1,19 +1,34 @@
 package org.landmarkscollector
 
+import android.content.Context
+import android.net.Uri
+import android.util.Log
+import androidx.camera.core.ImageProxy
+import androidx.documentfile.provider.DocumentFile
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
 import com.google.mediapipe.tasks.components.containers.NormalizedLandmark
 import com.google.mediapipe.tasks.vision.handlandmarker.HandLandmarkerResult
 import com.google.mlkit.vision.facemesh.FaceMeshPoint
 import com.google.mlkit.vision.pose.PoseLandmark
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.launchIn
+import kotlinx.coroutines.flow.map
 import org.landmarkscollector.data.CsvRow
 import org.landmarkscollector.data.Landmark
 import org.landmarkscollector.data.Landmark.Face
 import org.landmarkscollector.data.Landmark.Hand.Left
 import org.landmarkscollector.data.Landmark.Hand.Right
 import org.landmarkscollector.data.Landmark.Pose
+import org.landmarkscollector.data.Resource
+import org.landmarkscollector.domain.repository.DataConverter
+import org.landmarkscollector.domain.repository.ExportRepository
+import org.landmarkscollector.domain.repository.ExportRepositoryImpl
+import org.landmarkscollector.domain.repository.csv.DataConverterCSV
+import org.landmarkscollector.domain.repository.file.AndroidInternalStorageFileWriter
+import org.landmarkscollector.domain.repository.file.FileWriter
 import org.landmarkscollector.mlkit.detectors.DetectorResult
 
 class CameraScreenViewModel(
@@ -26,12 +41,15 @@ class CameraScreenViewModel(
         private const val KEY_GESTURE_NUM = "KEY_GESTURE_NUM"
     }
 
+    private val dataConverter: DataConverter = DataConverterCSV()
+
+    private var directory: Uri? = null
     private var facePoseFrame = 0
     private val csvRowsFacePose = HashMap<String, CsvRow>()
     private var handsFrame = 0
     private val csvRowsHands = HashMap<String, CsvRow>()
 
-    val currentGesture: StateFlow<String?> = savedStateHandle.getStateFlow(KEY_GESTURE, null)
+    val currentGestureName: StateFlow<String?> = savedStateHandle.getStateFlow(KEY_GESTURE, null)
 
     fun setGestureName(name: String) {
         savedStateHandle[KEY_GESTURE] = name
@@ -40,28 +58,32 @@ class CameraScreenViewModel(
     val isRecordingOn: StateFlow<Boolean> =
         savedStateHandle.getStateFlow(KEY_IS_RECORDING_ON, false)
 
-    val isRecordingButtonDisabled = isRecordingOn.combine(currentGesture) { isOn, gesture ->
+    val isRecordingButtonDisabled = isRecordingOn.combine(currentGestureName) { isOn, gesture ->
         isOn || gesture.isNullOrBlank()
     }
 
     val gesturesNum: StateFlow<Int> = savedStateHandle.getStateFlow(KEY_GESTURE_NUM, 0)
-    fun setGesturesNum(gesturesNum: Int) {
+    fun setGesturesNum(context: Context, gesturesNum: Int) {
         savedStateHandle[KEY_GESTURE_NUM] = gesturesNum
         //save csv file
-        saveCsvFile()
+        saveCsvFile(
+            context,
+            csvRowsFacePose,
+            csvRowsHands
+        )
     }
 
     fun setIsRecordingOn(isOn: Boolean) {
         savedStateHandle[KEY_IS_RECORDING_ON] = isOn
     }
 
-    fun onFacePoseResults(result: DetectorResult) {
+    fun onFacePoseResults(imageProxy: ImageProxy, result: DetectorResult) {
         if (isRecordingOn.value) {
             val poseLandmarks = result.pose.allPoseLandmarks
-                .map(::toLandmark)
+                .map { toLandmark(imageProxy, it) }
             val faceLandmarks = result.faces.firstOrNull()
                 ?.allPoints
-                ?.map(::toLandmark)
+                ?.map { toLandmark(imageProxy, it) }
 
             val frame = facePoseFrame++
             csvRowsFacePose.putAll(
@@ -95,15 +117,17 @@ class CameraScreenViewModel(
         }
     }
 
-    private fun toLandmark(poseLandmark: PoseLandmark): Landmark {
+    private fun toLandmark(imageProxy: ImageProxy, poseLandmark: PoseLandmark): Landmark {
         return with(poseLandmark.position3D) {
-            Pose(poseLandmark.landmarkType, x, y, z)
+            //TODO val ratio =
+            Pose(poseLandmark.landmarkType, x/imageProxy.width, y, z)
         }
     }
 
-    private fun toLandmark(faceMeshPoint: FaceMeshPoint): Landmark {
+    private fun toLandmark(imageProxy: ImageProxy, faceMeshPoint: FaceMeshPoint): Landmark {
         return with(faceMeshPoint.position) {
-            Face(faceMeshPoint.index, x, y, z)
+            //TODO val ratio =
+            Face(faceMeshPoint.index, x/imageProxy.width, y, z)
         }
     }
 
@@ -135,7 +159,24 @@ class CameraScreenViewModel(
         )
     }
 
-    private fun saveCsvFile() {
-        //TODO
+    private fun saveCsvFile(
+        context: Context,
+        facesPoses: Map<String, CsvRow>,
+        hands: Map<String, CsvRow>
+    ) {
+        val futureCsvFile = DocumentFile.fromTreeUri(context, directory!!)!!
+            .createFile("text/csv", "currentGestureName.value!!")!!
+
+        val exportRepository: ExportRepository =
+            ExportRepositoryImpl(AndroidInternalStorageFileWriter(context), dataConverter)
+
+        exportRepository.startExportData(
+            facesPoses.values.toList() + hands.values.toList(),
+            futureCsvFile.uri
+        ).launchIn(viewModelScope)
+    }
+
+    fun setCsvsDirectory(uri: Uri) {
+        directory = uri
     }
 }

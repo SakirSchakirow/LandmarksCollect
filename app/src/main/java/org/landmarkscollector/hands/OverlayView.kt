@@ -88,8 +88,6 @@ class OverlayView(context: Context?) :
 
         this.imageHeight = imageHeight
         this.imageWidth = imageWidth
-        Log.d("OverlayView", "Hand Image Width:$imageWidth")
-        Log.d("OverlayView", "Hand Image Height:$imageHeight")
 
         scaleFactor = when (runningMode) {
             RunningMode.IMAGE,
