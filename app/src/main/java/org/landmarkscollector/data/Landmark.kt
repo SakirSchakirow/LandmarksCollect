@@ -2,20 +2,20 @@ package org.landmarkscollector.data
 
 sealed class Landmark {
     abstract val type: LandmarkType
-    abstract val landmarkIndex: Int
+    abstract val landmarkIndex: UInt
     abstract val x: Float
     abstract val y: Float
     abstract val z: Float
 
     sealed class Hand(
-        override val landmarkIndex: Int,
+        override val landmarkIndex: UInt,
         override val x: Float,
         override val y: Float,
         override val z: Float
     ) : Landmark() {
 
         class Left(
-            override val landmarkIndex: Int,
+            override val landmarkIndex: UInt,
             override val x: Float,
             override val y: Float,
             override val z: Float
@@ -25,7 +25,7 @@ sealed class Landmark {
         }
 
         class Right(
-            override val landmarkIndex: Int,
+            override val landmarkIndex: UInt,
             override val x: Float,
             override val y: Float,
             override val z: Float
@@ -36,7 +36,7 @@ sealed class Landmark {
     }
 
     class Face(
-        override val landmarkIndex: Int,
+        override val landmarkIndex: UInt,
         override val x: Float,
         override val y: Float,
         override val z: Float
@@ -46,7 +46,7 @@ sealed class Landmark {
     }
 
     class Pose(
-        override val landmarkIndex: Int,
+        override val landmarkIndex: UInt,
         override val x: Float,
         override val y: Float,
         override val z: Float
@@ -55,10 +55,10 @@ sealed class Landmark {
         override val type = LandmarkType.Pose
     }
 
-    enum class LandmarkType(val label: String, val totalLandmarkNumber: Int) {
-        Face("face", 468),
-        RightHand("right_hand", 21),
-        LeftHand("left_hand", 21),
-        Pose("pose", 33),
+    enum class LandmarkType(val label: String, val totalLandmarkNumber: UInt) {
+        Face("face", 468u),
+        RightHand("right_hand", 21u),
+        LeftHand("left_hand", 21u),
+        Pose("pose", 33u)
     }
 }

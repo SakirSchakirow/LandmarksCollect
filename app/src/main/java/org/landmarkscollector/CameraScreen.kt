@@ -213,11 +213,13 @@ fun CameraScreen(
                     modifier = Modifier.fillMaxSize()
                 )
                 Column {
+
+
                     val timerScope = rememberCoroutineScope()
 
                     var timerDelayTicks by remember { mutableStateOf(DELAY_SECS) }
                     var timerTicks by remember { mutableStateOf(0) }
-                    val gesturesNum by viewModel.gesturesNum.collectAsState(initial = 0)
+                    val gesturesNum by viewModel.gesturesNum.collectAsState()
                     val isRecordingButtonDisabled by viewModel.isRecordingButtonDisabled
                         .collectAsState(
                             initial = false
