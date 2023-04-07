@@ -15,7 +15,8 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.launchIn
 import org.landmarkscollector.data.CsvRow
-import org.landmarkscollector.data.CsvRow.Companion.getRowId
+import org.landmarkscollector.data.CsvRow.Companion.empty
+import org.landmarkscollector.data.CsvRow.Companion.rowId
 import org.landmarkscollector.data.Landmark
 import org.landmarkscollector.data.Landmark.*
 import org.landmarkscollector.data.Landmark.Hand.Left
@@ -171,11 +172,7 @@ class CameraScreenViewModel(
     private fun Landmark.toCsvRow(frame: Int): CsvRow {
         return CsvRow(
             frame = frame,
-            landmarkIndex = landmarkIndex,
-            type = type,
-            x = x,
-            y = y,
-            z = z
+            landmark = this
         )
     }
 
@@ -213,7 +210,6 @@ class CameraScreenViewModel(
         handsNumber: Int,
     ): List<CsvRow> {
         val totalFramesNumber = min(facesPosesNumber, handsNumber)
-        // TODO rethink frame numbers
         return buildList {
             for (frameNumber in 0 until totalFramesNumber) {
                 addLandmarks(frameNumber, facesPoses, LandmarkType.Face)
@@ -230,21 +226,9 @@ class CameraScreenViewModel(
         landmarkType: LandmarkType
     ) {
         for (landmarkIndex in 0 until landmarkType.totalLandmarkNumber) {
-            val rowId = landmarkType.getRowId(frameNumber, landmarkIndex)
-            val csvRow = rows[rowId] ?: landmarkType.emptyCsvRow(frameNumber, landmarkIndex)
+            val rowId = landmarkType.rowId(frameNumber, landmarkIndex)
+            val csvRow = rows[rowId] ?: empty(frameNumber, landmarkIndex, landmarkType)
             add(csvRow)
         }
     }
-
-    private fun LandmarkType.emptyCsvRow(
-        frameNumber: Int,
-        landmarkIndex: Int,
-    ) = CsvRow(
-        frame = frameNumber,
-        landmarkIndex = landmarkIndex,
-        type = this,
-        x = null,
-        y = null,
-        z = null
-    )
 }

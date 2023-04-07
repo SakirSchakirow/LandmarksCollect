@@ -41,7 +41,7 @@ class DataConverterCSV : DataConverter {
                         "$frame",
                         "$landmarkIndex",
                         rowId,
-                        type.typeName,
+                        type,
                         "${x ?: ""}",
                         "${y ?: ""}",
                         "${z ?: ""}"
