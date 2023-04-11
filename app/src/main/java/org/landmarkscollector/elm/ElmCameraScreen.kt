@@ -1,6 +1,8 @@
-package org.landmarkscollector
+package org.landmarkscollector.elm
 
 import android.Manifest
+import android.content.Context
+import android.net.Uri
 import android.util.Log
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -8,6 +10,7 @@ import androidx.camera.core.AspectRatio
 import androidx.camera.core.CameraSelector
 import androidx.camera.core.ExperimentalGetImage
 import androidx.camera.core.ImageAnalysis
+import androidx.camera.core.ImageProxy
 import androidx.camera.core.Preview
 import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.camera.view.PreviewView
@@ -33,31 +36,31 @@ import com.google.accompanist.permissions.ExperimentalPermissionsApi
 import com.google.accompanist.permissions.PermissionRequired
 import com.google.accompanist.permissions.rememberPermissionState
 import com.google.mediapipe.tasks.vision.core.RunningMode
+import com.google.mediapipe.tasks.vision.handlandmarker.HandLandmarkerResult
 import com.google.mlkit.common.MlKitException
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.launch
 import org.landmarkscollector.hands.HandLandmarkerHelper
 import org.landmarkscollector.hands.LandmarkerListener
 import org.landmarkscollector.hands.OverlayView
 import org.landmarkscollector.hands.ResultBundle
 import org.landmarkscollector.mlkit.GraphicOverlay
 import org.landmarkscollector.mlkit.detectors.DetectorProcessor
+import org.landmarkscollector.mlkit.detectors.DetectorResult
 import java.util.concurrent.Executors
 import kotlin.coroutines.resume
 import kotlin.coroutines.suspendCoroutine
-import kotlin.time.Duration.Companion.seconds
-
-const val DELAY_SECS = 3
-const val GESTURES_NUM = 10
-const val MAX_FRAMES_SECS = 5
 
 @OptIn(
     ExperimentalPermissionsApi::class, ExperimentalMaterial3Api::class
 )
 @androidx.annotation.OptIn(ExperimentalGetImage::class)
 @Composable
-fun CameraScreen(
-    viewModel: CameraScreenViewModel
+fun ElmCameraScreen(
+    state: State,
+    onDirectoryChosen: (directory: Uri) -> Unit,
+    onGestureNameChanged: (gestureName: String) -> Unit,
+    onStartRecordingPressed: (context: Context) -> Unit,
+    onHandResults: (results: HandLandmarkerResult) -> Unit,
+    onFacePoseResults: (imageProxy: ImageProxy, result: DetectorResult) -> Unit
 ) {
     val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
@@ -97,7 +100,7 @@ fun CameraScreen(
 
                     override fun onResults(resultBundle: ResultBundle) {
                         ContextCompat.getMainExecutor(context).execute {
-                            viewModel.onHandResults(resultBundle.result)
+                            onHandResults(resultBundle.result)
                             with(overlayView) {
                                 setResults(
                                     handLandmarkerResults = resultBundle.result,
@@ -172,7 +175,7 @@ fun CameraScreen(
                                             imageProxy,
                                             graphicOverlay
                                         ) { detectorResult ->
-                                            viewModel.onFacePoseResults(imageProxy, detectorResult)
+                                            onFacePoseResults(imageProxy, detectorResult)
                                         }
                                 } catch (e: MlKitException) {
                                     Log.e(
@@ -213,75 +216,82 @@ fun CameraScreen(
                     modifier = Modifier.fillMaxSize()
                 )
                 Column {
-
-
-                    val timerScope = rememberCoroutineScope()
-
-                    var timerDelayTicks by remember { mutableStateOf(DELAY_SECS) }
-                    var timerTicks by remember { mutableStateOf(0) }
-                    val gesturesNum by viewModel.gesturesNum.collectAsState()
-                    val isRecordingButtonDisabled by viewModel.isRecordingButtonDisabled
-                        .collectAsState(
-                            initial = false
-                        )
-
-                    if (timerDelayTicks > 0) {
-                        Text("⏱️Recording will start in: $timerDelayTicks", fontSize = 25.sp)
-                    } else {
-                        Text("\uD83D\uDD34 Live: Recording", fontSize = 25.sp)
-                    }
-                    Text("Time seconds left: $timerTicks", fontSize = 25.sp)
-                    Text("Gesture #: $gesturesNum", fontSize = 25.sp)
-                    Button(
-                        enabled = isRecordingButtonDisabled.not(),
-                        onClick = {
-                            timerScope.launch {
-                                viewModel.setIsRecordingOn(true)
-                                while (gesturesNum < GESTURES_NUM) {
-                                    timerDelayTicks = DELAY_SECS
-                                    timerTicks = MAX_FRAMES_SECS
-                                    while (timerDelayTicks > 0) {
-                                        delay(1.seconds)
-                                        timerDelayTicks--
-                                    }
-                                    while (timerTicks > 0) {
-                                        delay(1.seconds)
-                                        timerTicks--
-                                    }
-                                    viewModel.setGesturesNum(context, gesturesNum + 1)
-                                }
-                                viewModel.setIsRecordingOn(false)
+                    when (state) {
+                        is State.Steady.ReadyToStartRecording -> {
+                            Button(
+                                onClick = {
+                                    onStartRecordingPressed(context)
+                                }) {
+                                Text("Start Recording", fontSize = 25.sp)
                             }
-                        }) {
-                        Text("Start Recording", fontSize = 25.sp)
-                    }
-
-                    val pickPathLauncher = rememberLauncherForActivityResult(
-                        contract = ActivityResultContracts.OpenDocumentTree(),
-                        onResult = { uri ->
-                            uri?.let(viewModel::setCurrentDirectory)
+                            Text(
+                                "Gesture-directory path: ${state.directoryUri.path}",
+                                fontSize = 20.sp
+                            )
+                            Text(
+                                "Gesture to be recorded: ${state.gestureName}",
+                                fontSize = 20.sp
+                            )
                         }
-                    )
-                    Button(onClick = {
-                        pickPathLauncher.launch(null)
-                    }) {
-                        Text("Choose directory to save CSVs", fontSize = 25.sp)
-                    }
 
-                    val gestureName by viewModel.currentGestureName.collectAsState()
-                    val focusManager = LocalFocusManager.current
-                    OutlinedTextField(
-                        value = gestureName ?: "",
-                        maxLines = 1,
-                        onValueChange = { text ->
-                            viewModel.setGestureName(text)
-                        },
-                        label = { Text("Gesture Name (.csv file name)") },
-                        keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
-                        keyboardActions = KeyboardActions(
-                            onDone = { focusManager.clearFocus() }
-                        )
-                    )
+                        is State.Recording.PreparingForTheNextRecording -> {
+                            Text(
+                                "⏱️Recording will start in: ${state.delayTicks}",
+                                fontSize = 25.sp
+                            )
+                            Text(
+                                "Gesture ${state.gestureName} #: ${state.gestureNum} is saved",
+                                fontSize = 20.sp
+                            )
+                        }
+
+                        is State.Recording.RecordingMotion -> {
+                            Text("\uD83D\uDD34 Live: Recording", fontSize = 25.sp)
+                            Text("Time seconds left: ${state.timeLeft}", fontSize = 25.sp)
+                            Text(
+                                "Gesture ${state.gestureName} #: ${state.gestureNum}",
+                                fontSize = 20.sp
+                            )
+                        }
+
+                        is State.Recording.SavingPreviousMotion -> {
+                            Text("💾 Saving...", fontSize = 25.sp)
+                            Text("Done: ${state.savingProgress}%", fontSize = 25.sp)
+                            Text(
+                                "Gesture ${state.gestureName} #: ${state.gestureNum}",
+                                fontSize = 20.sp
+                            )
+                        }
+
+                        is State.Steady.WaitingForDirectoryAndGesture -> {
+                            val pickPathLauncher = rememberLauncherForActivityResult(
+                                contract = ActivityResultContracts.OpenDocumentTree(),
+                                onResult = { uri ->
+                                    if (uri != null) {
+                                        onDirectoryChosen(uri)
+                                    }
+                                }
+                            )
+                            Button(onClick = {
+                                pickPathLauncher.launch(null)
+                            }) {
+                                Text("Choose directory to save CSVs", fontSize = 25.sp)
+                            }
+                            val focusManager = LocalFocusManager.current
+                            OutlinedTextField(
+                                value = state.gestureName ?: "",
+                                maxLines = 1,
+                                onValueChange = { text ->
+                                    onGestureNameChanged(text)
+                                },
+                                label = { Text("Gesture Name (.csv file name)") },
+                                keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
+                                keyboardActions = KeyboardActions(
+                                    onDone = { focusManager.clearFocus() }
+                                )
+                            )
+                        }
+                    }
                 }
             }
         }
