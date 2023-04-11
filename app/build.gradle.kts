@@ -51,8 +51,9 @@ android {
 
 dependencies {
 
-    implementation("androidx.core:core-ktx:1.9.0")
+    implementation("androidx.core:core-ktx:1.10.0")
     implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.6.1")
+    implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.6.1")
     implementation("androidx.activity:activity-compose:1.7.0")
     implementation(platform("androidx.compose:compose-bom:2022.10.00"))
     implementation("androidx.compose.ui:ui")
@@ -82,6 +83,11 @@ dependencies {
     implementation("com.opencsv:opencsv:5.7.0")
 
     implementation("androidx.documentfile:documentfile:1.0.1")
+
+    // Elmslie Mvi
+    implementation("com.github.vivid-money.elmslie:elmslie-core:3.0.0-alpha06")
+    implementation("com.github.vivid-money.elmslie:elmslie-android:3.0.0-alpha06")
+//    implementation("com.github.vivid-money.elmslie:elmslie-compose:3.0.0-alpha06")
 
     testImplementation("junit:junit:4.13.2")
     androidTestImplementation("androidx.test.ext:junit:1.1.5")
