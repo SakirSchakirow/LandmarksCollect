@@ -37,6 +37,8 @@ import com.google.accompanist.permissions.rememberPermissionState
 import com.google.mediapipe.tasks.vision.core.RunningMode
 import com.google.mediapipe.tasks.vision.handlandmarker.HandLandmarkerResult
 import com.google.mlkit.common.MlKitException
+import org.landmarkscollector.elm.State.Steady
+import org.landmarkscollector.elm.State.Steady.ReadyToStartRecording
 import org.landmarkscollector.hands.HandLandmarkerHelper
 import org.landmarkscollector.hands.LandmarkerListener
 import org.landmarkscollector.hands.OverlayView
@@ -216,52 +218,8 @@ fun ElmCameraScreen(
                 )
                 Column {
                     when (state) {
-                        is State.Steady.ReadyToStartRecording -> {
-                            Button(
-                                onClick = onStartRecordingPressed
-                            ) {
-                                Text("Start Recording", fontSize = 25.sp)
-                            }
-                            Text(
-                                "Gesture-directory path: ${state.directoryUri.path}",
-                                fontSize = 20.sp
-                            )
-                            Text(
-                                "Gesture to be recorded: ${state.gestureName}",
-                                fontSize = 20.sp
-                            )
-                        }
-
-                        is State.Recording.PreparingForTheNextRecording -> {
-                            Text(
-                                "⏱️Recording will start in: ${state.delayTicks}",
-                                fontSize = 25.sp
-                            )
-                            Text(
-                                "Gesture ${state.gestureName} #: ${state.gestureNum} is saved",
-                                fontSize = 20.sp
-                            )
-                        }
-
-                        is State.Recording.RecordingMotion -> {
-                            Text("\uD83D\uDD34 Live: Recording", fontSize = 25.sp)
-                            Text("Time seconds left: ${state.timeLeft}", fontSize = 25.sp)
-                            Text(
-                                "Gesture ${state.gestureName} #: ${state.gestureNum}",
-                                fontSize = 20.sp
-                            )
-                        }
-
-                        is State.Recording.SavingPreviousMotion -> {
-                            Text("💾 Saving...", fontSize = 25.sp)
-                            Text("Done: ${state.savingProgress}%", fontSize = 25.sp)
-                            Text(
-                                "Gesture ${state.gestureName} #: ${state.gestureNum}",
-                                fontSize = 20.sp
-                            )
-                        }
-
-                        is State.Steady.WaitingForDirectoryAndGesture -> {
+                        is Steady -> {
+                            var gestureName by remember { mutableStateOf("") }
                             val pickPathLauncher = rememberLauncherForActivityResult(
                                 contract = ActivityResultContracts.OpenDocumentTree(),
                                 onResult = { uri ->
@@ -273,13 +231,18 @@ fun ElmCameraScreen(
                             Button(onClick = {
                                 pickPathLauncher.launch(null)
                             }) {
-                                Text("Choose directory to save CSVs", fontSize = 25.sp)
+                                val action = if (state is ReadyToStartRecording)
+                                    "Change"
+                                else
+                                    "Choose"
+                                Text("$action directory to save CSVs", fontSize = 25.sp)
                             }
                             val focusManager = LocalFocusManager.current
                             OutlinedTextField(
-                                value = state.gestureName ?: "",
+                                value = gestureName,
                                 maxLines = 1,
                                 onValueChange = { text ->
+                                    gestureName = text
                                     onGestureNameChanged(text)
                                 },
                                 label = { Text("Gesture Name (.csv file name)") },
@@ -287,6 +250,53 @@ fun ElmCameraScreen(
                                 keyboardActions = KeyboardActions(
                                     onDone = { focusManager.clearFocus() }
                                 )
+                            )
+                            if (state is ReadyToStartRecording) {
+                                Button(
+                                    onClick = onStartRecordingPressed
+                                ) {
+                                    Text("Start Recording", fontSize = 25.sp)
+                                }
+                                Text(
+                                    "Gesture-directory path: ${state.directoryUri.path}",
+                                    fontSize = 16.sp
+                                )
+                                Text(
+                                    "Gesture will be recorded in files: ${state.gestureName}_N.csv",
+                                    fontSize = 16.sp
+                                )
+                            }
+                        }
+
+                        is State.Recording.PreparingForTheNextRecording -> {
+                            val gestureNum = state.gestureNum.dec()
+                            if (gestureNum != UInt.MIN_VALUE) {
+                                Text(
+                                    "Gesture ${state.gestureName} #: $gestureNum is saved",
+                                    fontSize = 20.sp
+                                )
+                            }
+                            Text(
+                                "⏱️Recording #${state.gestureNum} will start in: ${state.delayTicks}",
+                                fontSize = 25.sp
+                            )
+                        }
+
+                        is State.Recording.RecordingMotion -> {
+                            Text(
+                                "Gesture ${state.gestureName} #: ${state.gestureNum}",
+                                fontSize = 20.sp
+                            )
+                            Text("\uD83D\uDD34 Live: Recording", fontSize = 23.sp)
+                            Text("Time seconds left: ${state.timeLeft}", fontSize = 25.sp)
+                        }
+
+                        is State.Recording.SavingPreviousMotion -> {
+                            Text("💾 Saving...", fontSize = 25.sp)
+                            Text("Done: ${state.savingProgress}%", fontSize = 25.sp)
+                            Text(
+                                "Gesture ${state.gestureName} #: ${state.gestureNum}",
+                                fontSize = 20.sp
                             )
                         }
                     }

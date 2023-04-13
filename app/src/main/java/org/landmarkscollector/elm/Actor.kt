@@ -49,6 +49,13 @@ class Actor(
             }
         }
 
+        Command.PrepareForGestureRecording -> flow {
+            for (delayTicks in DELAY_SECS downTo UInt.MIN_VALUE) {
+                delay(1.seconds)
+                emit(WaitingForTheNextMotionRecording(delayTicks))
+            }
+        }
+
         Command.StartRecording -> flow {
             for (timeLeft in MAX_FRAMES_SECS downTo UInt.MIN_VALUE) {
                 delay(1.seconds)
