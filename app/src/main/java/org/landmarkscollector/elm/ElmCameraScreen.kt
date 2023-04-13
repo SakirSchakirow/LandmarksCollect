@@ -207,11 +207,11 @@ fun ElmCameraScreen(
                     modifier = Modifier.fillMaxSize()
                 )
                 AndroidView(
-                    factory = { overlayView },
+                    factory = { graphicOverlay },
                     modifier = Modifier.fillMaxSize()
                 )
                 AndroidView(
-                    factory = { graphicOverlay },
+                    factory = { overlayView },
                     modifier = Modifier.fillMaxSize()
                 )
                 Column {
