@@ -1,7 +1,6 @@
 package org.landmarkscollector.elm
 
 import android.Manifest
-import android.content.Context
 import android.net.Uri
 import android.util.Log
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -58,7 +57,7 @@ fun ElmCameraScreen(
     state: State,
     onDirectoryChosen: (directory: Uri) -> Unit,
     onGestureNameChanged: (gestureName: String) -> Unit,
-    onStartRecordingPressed: (context: Context) -> Unit,
+    onStartRecordingPressed: () -> Unit,
     onHandResults: (results: HandLandmarkerResult) -> Unit,
     onFacePoseResults: (imageProxy: ImageProxy, result: DetectorResult) -> Unit
 ) {
@@ -219,9 +218,8 @@ fun ElmCameraScreen(
                     when (state) {
                         is State.Steady.ReadyToStartRecording -> {
                             Button(
-                                onClick = {
-                                    onStartRecordingPressed(context)
-                                }) {
+                                onClick = onStartRecordingPressed
+                            ) {
                                 Text("Start Recording", fontSize = 25.sp)
                             }
                             Text(

@@ -43,7 +43,7 @@ class MainActivity : ComponentActivity(), ElmRendererDelegate<Effect, State> {
                         state = state,
                         onDirectoryChosen = { store.accept(Event.Ui.OnDirectoryChosen(it)) },
                         onGestureNameChanged = { store.accept(Event.Ui.OnGestureNameChanged(it)) },
-                        onStartRecordingPressed = { store.accept(Event.Ui.OnStartRecordingPressed(it)) },
+                        onStartRecordingPressed = { store.accept(Event.Ui.OnStartRecordingPressed) },
                         onHandResults = { store.accept(Event.Ui.OnHandResults(it)) },
                         onFacePoseResults = { imageProxy, result ->
                             store.accept(Event.Ui.OnFacePoseResults(imageProxy, result))

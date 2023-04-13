@@ -1,16 +1,12 @@
 package org.landmarkscollector.elm
 
-import android.annotation.SuppressLint
-import android.content.Context
 import androidx.camera.core.ImageProxy
-import androidx.documentfile.provider.DocumentFile
 import com.google.mediapipe.tasks.components.containers.NormalizedLandmark
 import com.google.mlkit.vision.facemesh.FaceMeshPoint
 import com.google.mlkit.vision.pose.PoseLandmark
 import org.landmarkscollector.data.CsvRow
 import org.landmarkscollector.data.Landmark
-import org.landmarkscollector.domain.repository.DataConverter
-import org.landmarkscollector.domain.repository.csv.DataConverterCSV
+import org.landmarkscollector.domain.repository.FileCreator
 import org.landmarkscollector.elm.Command.SaveRecording
 import org.landmarkscollector.elm.Command.StartRecording
 import org.landmarkscollector.elm.Event.Ui
@@ -26,15 +22,12 @@ import org.landmarkscollector.elm.State.Recording.SavingPreviousMotion
 import org.landmarkscollector.elm.State.Steady.WaitingForDirectoryAndGesture
 import vivid.money.elmslie.core.store.dsl_reducer.ScreenDslReducer
 
-private const val CSV_MIME_TYPE = "text/csv"
-
-@SuppressLint("StaticFieldLeak")
-// TODO use DI to avoid context-leaking
-object Reducer : ScreenDslReducer<Event, Ui, Internal, State, Effect, Command>(
+class Reducer(
+    private val fileCreator: FileCreator
+) : ScreenDslReducer<Event, Ui, Internal, State, Effect, Command>(
     uiEventClass = Ui::class,
     internalEventClass = Internal::class
 ) {
-    private lateinit var context: Context
 
     override fun Result.internal(event: Internal) {
         val currentState = state
@@ -56,16 +49,14 @@ object Reducer : ScreenDslReducer<Event, Ui, Internal, State, Effect, Command>(
                             gestureNum = currentState.gestureNum
                         )
                     }
-                    val futureCsvFile =
-                        DocumentFile.fromTreeUri(context, currentState.directoryUri)!!
-                            .createFile(
-                                CSV_MIME_TYPE,
-                                "${currentState.gestureName}_${currentState.gestureNum}"
-                            )!!
 
                     commands {
                         +SaveRecording(
-                            uri = futureCsvFile.uri,
+                            uri = fileCreator.createFile(
+                                currentState.directoryUri,
+                                currentState.gestureName,
+                                currentState.gestureNum
+                            ),
                             hands = currentState.hands,
                             facePose = currentState.facePose
                         )
@@ -211,7 +202,6 @@ object Reducer : ScreenDslReducer<Event, Ui, Internal, State, Effect, Command>(
             }
 
             is Ui.OnStartRecordingPressed -> if (currentState is State.Steady.ReadyToStartRecording) {
-                context = event.context
                 commands { +StartRecording }
                 state {
                     RecordingMotion(
@@ -222,8 +212,6 @@ object Reducer : ScreenDslReducer<Event, Ui, Internal, State, Effect, Command>(
             }
         }
     }
-
-    private val dataConverter: DataConverter = DataConverterCSV()
 
     private fun toLandmark(imageProxy: ImageProxy, poseLandmark: PoseLandmark): Landmark {
         return with(poseLandmark.position3D) {
