@@ -1,4 +1,4 @@
-package org.landmarkscollector.elm
+package org.landmarkscollector.camera
 
 import android.content.Context
 import org.landmarkscollector.domain.repository.ExportRepositoryImpl

@@ -1,4 +1,4 @@
-package org.landmarkscollector.elm
+package org.landmarkscollector.camera
 
 import androidx.camera.core.ImageProxy
 import com.google.mediapipe.tasks.components.containers.NormalizedLandmark
@@ -7,20 +7,20 @@ import com.google.mlkit.vision.pose.PoseLandmark
 import org.landmarkscollector.data.CsvRow
 import org.landmarkscollector.data.Landmark
 import org.landmarkscollector.domain.repository.FileCreator
-import org.landmarkscollector.elm.Command.PrepareForGestureRecording
-import org.landmarkscollector.elm.Command.SaveRecording
-import org.landmarkscollector.elm.Command.StartRecording
-import org.landmarkscollector.elm.Event.Ui
-import org.landmarkscollector.elm.Event.Internal
-import org.landmarkscollector.elm.Event.Internal.RecordIsSaving
-import org.landmarkscollector.elm.Event.Internal.RecordingSaved
-import org.landmarkscollector.elm.Event.Internal.RecordingTimeLeft
-import org.landmarkscollector.elm.Event.Internal.WaitingForTheNextMotionRecording
-import org.landmarkscollector.elm.State.Companion.TOTAL_GESTURES_NUM
-import org.landmarkscollector.elm.State.Recording.PreparingForTheNextRecording
-import org.landmarkscollector.elm.State.Recording.RecordingMotion
-import org.landmarkscollector.elm.State.Recording.SavingPreviousMotion
-import org.landmarkscollector.elm.State.Steady.WaitingForDirectoryAndGesture
+import org.landmarkscollector.camera.Command.PrepareForGestureRecording
+import org.landmarkscollector.camera.Command.SaveRecording
+import org.landmarkscollector.camera.Command.StartRecording
+import org.landmarkscollector.camera.Event.Ui
+import org.landmarkscollector.camera.Event.Internal
+import org.landmarkscollector.camera.Event.Internal.RecordIsSaving
+import org.landmarkscollector.camera.Event.Internal.RecordingSaved
+import org.landmarkscollector.camera.Event.Internal.RecordingTimeLeft
+import org.landmarkscollector.camera.Event.Internal.WaitingForTheNextMotionRecording
+import org.landmarkscollector.camera.State.Companion.TOTAL_GESTURES_NUM
+import org.landmarkscollector.camera.State.Recording.PreparingForTheNextRecording
+import org.landmarkscollector.camera.State.Recording.RecordingMotion
+import org.landmarkscollector.camera.State.Recording.SavingPreviousMotion
+import org.landmarkscollector.camera.State.Steady.WaitingForDirectoryAndGesture
 import vivid.money.elmslie.core.store.dsl_reducer.ScreenDslReducer
 
 class Reducer(
