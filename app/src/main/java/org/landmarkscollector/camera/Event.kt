@@ -25,6 +25,12 @@ sealed interface Event {
         class OnFacePoseResults(
             val imageProxy: ImageProxy, val result: DetectorResult
         ) : Ui
+
+        object OnResumeRecording : Ui
+
+        object OnPauseRecording : Ui
+
+        object OnStopRecording : Ui
     }
 
     sealed interface Internal : Event {

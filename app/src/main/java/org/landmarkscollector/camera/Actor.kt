@@ -3,6 +3,8 @@ package org.landmarkscollector.camera
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.sync.Semaphore
+import kotlinx.coroutines.sync.withPermit
 import org.landmarkscollector.data.CsvRow
 import org.landmarkscollector.data.CsvRow.Companion.rowId
 import org.landmarkscollector.data.Landmark
@@ -18,6 +20,8 @@ import kotlin.time.Duration.Companion.seconds
 class Actor(
     private val exportRepository: ExportRepository
 ) : DefaultActor<Command, Event> {
+
+    private val recordingSemaphore: Semaphore = Semaphore(1)
 
     override fun execute(command: Command): Flow<Event> = when (command) {
         is Command.SaveRecording -> flow {
@@ -51,16 +55,32 @@ class Actor(
 
         Command.PrepareForGestureRecording -> flow {
             for (delayTicks in DELAY_SECS downTo UInt.MIN_VALUE) {
-                delay(1.seconds)
-                emit(WaitingForTheNextMotionRecording(delayTicks))
+                recordingSemaphore.withPermit {
+                    delay(1.seconds)
+                    emit(WaitingForTheNextMotionRecording(delayTicks))
+                }
             }
         }
 
         Command.StartRecording -> flow {
             for (timeLeft in MAX_FRAMES_SECS downTo UInt.MIN_VALUE) {
-                delay(1.seconds)
-                emit(RecordingTimeLeft(timeLeft))
+                recordingSemaphore.withPermit {
+                    delay(1.seconds)
+                    emit(RecordingTimeLeft(timeLeft))
+                }
             }
+        }
+
+        Command.PauseRecording -> flow {
+            recordingSemaphore.acquire()
+        }
+
+        Command.ResumeRecording -> flow {
+            recordingSemaphore.release()
+        }
+
+        Command.StopRecording -> flow {
+            recordingSemaphore.release()
         }
     }
 
