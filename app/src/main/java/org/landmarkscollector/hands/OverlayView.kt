@@ -4,21 +4,19 @@ import android.content.Context
 import android.graphics.Canvas
 import android.graphics.Color
 import android.graphics.Paint
-import android.util.AttributeSet
-import android.util.Log
 import android.view.View
 import androidx.core.content.ContextCompat
 import com.google.mediapipe.tasks.vision.core.RunningMode
 import com.google.mediapipe.tasks.vision.handlandmarker.HandLandmark
-import com.google.mediapipe.tasks.vision.handlandmarker.HandLandmarkerResult
 import org.landmarkscollector.R
+import org.landmarkscollector.data.Landmark.Hand
 import kotlin.math.max
 import kotlin.math.min
 
 class OverlayView(context: Context?) :
     View(context, null) {
 
-    private var results: HandLandmarkerResult? = null
+    private var results: List<List<Hand>>? = null
     private var linePaint = Paint()
     private var pointPaint = Paint()
 
@@ -55,16 +53,16 @@ class OverlayView(context: Context?) :
             val lines = mutableListOf<Float>()
             val points = mutableListOf<Float>()
 
-            for (landmarks in handLandmarkerResult.landmarks()) {
+            for (landmarks in handLandmarkerResult) {
                 for (i in landmarkConnections.indices step 2) {
                     val startX =
-                        landmarks[landmarkConnections[i]].x() * imageWidth * scaleFactor
+                        landmarks[landmarkConnections[i]].x * imageWidth * scaleFactor
                     val startY =
-                        landmarks[landmarkConnections[i]].y() * imageHeight * scaleFactor
+                        landmarks[landmarkConnections[i]].y * imageHeight * scaleFactor
                     val endX =
-                        landmarks[landmarkConnections[i + 1]].x() * imageWidth * scaleFactor
+                        landmarks[landmarkConnections[i + 1]].x * imageWidth * scaleFactor
                     val endY =
-                        landmarks[landmarkConnections[i + 1]].y() * imageHeight * scaleFactor
+                        landmarks[landmarkConnections[i + 1]].y * imageHeight * scaleFactor
                     lines.add(startX)
                     lines.add(startY)
                     lines.add(endX)
@@ -79,12 +77,12 @@ class OverlayView(context: Context?) :
     }
 
     fun setResults(
-        handLandmarkerResults: HandLandmarkerResult,
+        handLandmarks: List<List<Hand>>,
         imageHeight: Int,
         imageWidth: Int,
         runningMode: RunningMode
     ) {
-        results = handLandmarkerResults
+        results = handLandmarks
 
         this.imageHeight = imageHeight
         this.imageWidth = imageWidth

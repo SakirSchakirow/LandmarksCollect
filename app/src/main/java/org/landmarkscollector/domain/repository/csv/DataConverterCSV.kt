@@ -12,7 +12,7 @@ import org.landmarkscollector.domain.repository.DataConverter
 import java.io.StringWriter
 import java.io.Writer
 
-class DataConverterCsv : DataConverter {
+class DataConverterCSV : DataConverter {
 
     private fun getCsvWriter(writer: Writer): ICSVWriter {
         return CSVWriterBuilder(writer)

@@ -36,8 +36,8 @@ import com.google.accompanist.permissions.ExperimentalPermissionsApi
 import com.google.accompanist.permissions.PermissionRequired
 import com.google.accompanist.permissions.rememberPermissionState
 import com.google.mediapipe.tasks.vision.core.RunningMode
-import com.google.mediapipe.tasks.vision.handlandmarker.HandLandmarkerResult
 import com.google.mlkit.common.MlKitException
+import org.landmarkscollector.data.Landmark.Hand
 import org.landmarkscollector.motionRecording.State.Steady
 import org.landmarkscollector.motionRecording.State.Steady.ReadyToStartRecording
 import org.landmarkscollector.hands.HandLandmarkerHelper
@@ -64,7 +64,7 @@ fun CameraScreen(
     onPauseRecordingPressed: () -> Unit,
     onResumeRecordingPressed: () -> Unit,
     onStopRecordingPressed: () -> Unit,
-    onHandResults: (results: HandLandmarkerResult) -> Unit,
+    onHandResults: (handsResults: List<List<Hand>>) -> Unit,
     onFacePoseResults: (imageProxy: ImageProxy, result: DetectorResult) -> Unit
 ) {
     val context = LocalContext.current
@@ -104,10 +104,10 @@ fun CameraScreen(
 
                     override fun onResults(resultBundle: ResultBundle) {
                         ContextCompat.getMainExecutor(context).execute {
-                            onHandResults(resultBundle.result)
+                            onHandResults(resultBundle.handLandmarks)
                             with(overlayView) {
                                 setResults(
-                                    handLandmarkerResults = resultBundle.result,
+                                    handLandmarks = resultBundle.handLandmarks,
                                     imageHeight = resultBundle.inputImageHeight,
                                     imageWidth = resultBundle.inputImageWidth,
                                     runningMode = RunningMode.LIVE_STREAM
@@ -118,7 +118,6 @@ fun CameraScreen(
                     }
                 })
             }
-
 
             with(suspendCoroutine { continuation ->
                 ProcessCameraProvider.getInstance(context).also { future ->
