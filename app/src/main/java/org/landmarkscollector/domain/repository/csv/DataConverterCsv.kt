@@ -12,16 +12,15 @@ import org.landmarkscollector.domain.repository.DataConverter
 import java.io.StringWriter
 import java.io.Writer
 
-class DataConverterCSV : DataConverter {
+class DataConverterCsv : DataConverter {
 
-    private fun getCSVWriter(writer: Writer): ICSVWriter {
+    private fun getCsvWriter(writer: Writer): ICSVWriter {
         return CSVWriterBuilder(writer)
             .withSeparator(SEPARATOR)
             .withQuoteChar(CSVWriter.NO_QUOTE_CHARACTER)
             .withEscapeChar(CSVWriter.DEFAULT_ESCAPE_CHARACTER)
             .withLineEnd(CSVWriter.DEFAULT_LINE_END)
             .build()
-
     }
 
     override fun convertSensorData(
@@ -29,7 +28,7 @@ class DataConverterCSV : DataConverter {
     ): Flow<Resource<GenerateInfo>> = flow {
         emit(Resource.Loading(GenerateInfo()))
         val writer = StringWriter()
-        val csvWriter = getCSVWriter(writer)
+        val csvWriter = getCsvWriter(writer)
         val valuesForOnePercent = (exportDataList.size / 100) + 1
         var alreadyConvertedValues = 0
         csvWriter.writeNext(HEADER_DATA)
@@ -73,6 +72,6 @@ class DataConverterCSV : DataConverter {
 
     companion object {
         const val SEPARATOR = ';'
-        val HEADER_DATA = arrayOf("frame", "landmarkIndex", "row_id", "type", "x", "y", "z")
+        val HEADER_DATA = arrayOf("frame", "landmark_index", "row_id", "type", "x", "y", "z")
     }
 }
