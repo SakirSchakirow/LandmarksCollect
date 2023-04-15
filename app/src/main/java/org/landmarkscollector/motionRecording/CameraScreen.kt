@@ -1,4 +1,4 @@
-package org.landmarkscollector.camera
+package org.landmarkscollector.motionRecording
 
 import android.Manifest
 import android.net.Uri
@@ -38,8 +38,8 @@ import com.google.accompanist.permissions.rememberPermissionState
 import com.google.mediapipe.tasks.vision.core.RunningMode
 import com.google.mediapipe.tasks.vision.handlandmarker.HandLandmarkerResult
 import com.google.mlkit.common.MlKitException
-import org.landmarkscollector.camera.State.Steady
-import org.landmarkscollector.camera.State.Steady.ReadyToStartRecording
+import org.landmarkscollector.motionRecording.State.Steady
+import org.landmarkscollector.motionRecording.State.Steady.ReadyToStartRecording
 import org.landmarkscollector.hands.HandLandmarkerHelper
 import org.landmarkscollector.hands.LandmarkerListener
 import org.landmarkscollector.hands.OverlayView
@@ -94,7 +94,6 @@ fun CameraScreen(
 
         LaunchedEffect(previewView) {
             lateinit var handLandmarkerHelper: HandLandmarkerHelper
-            lateinit var detectorProcessor: DetectorProcessor
             val backgroundExecutor = Executors.newSingleThreadExecutor()
             backgroundExecutor.execute {
                 handLandmarkerHelper = HandLandmarkerHelper(context, object : LandmarkerListener {
@@ -120,7 +119,6 @@ fun CameraScreen(
                 })
             }
 
-            detectorProcessor = DetectorProcessor(context)
 
             with(suspendCoroutine { continuation ->
                 ProcessCameraProvider.getInstance(context).also { future ->
@@ -132,6 +130,7 @@ fun CameraScreen(
                     )
                 }
             }) {
+                val detectorProcessor = DetectorProcessor(context)
                 var needUpdateGraphicOverlayImageSourceInfo = true
                 unbindAll()
                 bindToLifecycle(

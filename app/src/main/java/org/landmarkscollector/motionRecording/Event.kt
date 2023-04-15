@@ -1,4 +1,4 @@
-package org.landmarkscollector.camera
+package org.landmarkscollector.motionRecording
 
 import android.net.Uri
 import androidx.camera.core.ImageProxy
