@@ -132,7 +132,7 @@ public class GraphicOverlay extends View {
             if (overlay.isImageFlipped) {
                 return overlay.getWidth() - (scale(x) - overlay.postScaleWidthOffset);
             } else {
-                return scale(x) - overlay.postScaleWidthOffset;
+                return scale(x);
             }
         }
 
