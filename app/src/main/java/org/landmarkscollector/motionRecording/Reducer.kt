@@ -44,7 +44,8 @@ class Reducer(
                         SavingPreviousMotion(
                             directoryUri = currentState.directoryUri,
                             gestureName = currentState.gestureName,
-                            gestureNum = currentState.gestureNum
+                            gestureNum = currentState.gestureNum,
+                            isFrontCamera = currentState.isFrontCamera
                         )
                     }
 
@@ -74,7 +75,8 @@ class Reducer(
                         PreparingForTheNextRecording(
                             directoryUri = currentState.directoryUri,
                             gestureName = currentState.gestureName,
-                            gestureNum = currentState.gestureNum.inc()
+                            gestureNum = currentState.gestureNum.inc(),
+                            isFrontCamera = currentState.isFrontCamera
                         )
                     } else {
                         WaitingForDirectoryAndGesture(
@@ -95,7 +97,8 @@ class Reducer(
                         RecordingMotion(
                             directoryUri = currentState.directoryUri,
                             gestureName = currentState.gestureName,
-                            gestureNum = currentState.gestureNum
+                            gestureNum = currentState.gestureNum,
+                            isFrontCamera = currentState.isFrontCamera
                         )
                     }
                     commands { +StartRecording }
@@ -113,10 +116,10 @@ class Reducer(
                     if (currentGestureName == null) {
                         currentState.copy(directoryUri = event.directory)
                     } else {
-
                         State.Steady.ReadyToStartRecording(
                             event.directory,
-                            currentGestureName
+                            currentGestureName,
+                            isFrontCamera = currentState.isFrontCamera
                         )
                     }
                 }
@@ -190,7 +193,8 @@ class Reducer(
                     PreparingForTheNextRecording(
                         directoryUri = currentState.directoryUri,
                         gestureName = currentState.gestureName,
-                        gestureNum = 1u
+                        gestureNum = 1u,
+                        isFrontCamera = currentState.isFrontCamera
                     )
                 }
                 commands { +PrepareForGestureRecording }
@@ -223,6 +227,16 @@ class Reducer(
                         directoryUri = currentState.directoryUri,
                         gestureName = currentState.gestureName
                     )
+                }
+            }
+
+            Ui.OnToggleCamera -> when {
+                currentState is WaitingForDirectoryAndGesture -> state {
+                    currentState.copy(isFrontCamera = currentState.isFrontCamera.not())
+                }
+
+                currentState is State.Steady.ReadyToStartRecording -> state {
+                    currentState.copy(isFrontCamera = currentState.isFrontCamera.not())
                 }
             }
         }
