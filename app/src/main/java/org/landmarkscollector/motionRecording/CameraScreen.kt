@@ -65,7 +65,7 @@ fun CameraScreen(
     onResumeRecordingPressed: () -> Unit,
     onStopRecordingPressed: () -> Unit,
     onHandResults: (handsResults: List<List<Hand>>) -> Unit,
-    onFacePoseResults: (imageProxy: ImageProxy, result: DetectorResult) -> Unit
+    onFacePoseResults: (imageProxy: ImageProxy, result: DetectorResult) -> Unit,
 ) {
     val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
