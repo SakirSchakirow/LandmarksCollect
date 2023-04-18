@@ -24,7 +24,6 @@ import android.util.AttributeSet;
 import android.view.View;
 
 import com.google.common.base.Preconditions;
-import com.google.common.primitives.Ints;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -192,8 +191,8 @@ public class GraphicOverlay extends View {
     }
 
     /**
-     * Sets the source information of the image being processed by detectors, including size and
-     * whether it is flipped, which informs how to transform image coordinates later.
+     * Sets the source information of the image being processed by detectors, including size
+     * which informs how to transform image coordinates later.
      *
      * @param imageWidth  the width of the image sent to ML Kit detectors
      * @param imageHeight the height of the image sent to ML Kit detectors
@@ -208,6 +207,19 @@ public class GraphicOverlay extends View {
             this.imageHeight = imageHeight;
             this.isImageFlipped = isFlipped;
             needUpdateTransformation = true;
+        }
+        postInvalidate();
+    }
+
+    /**
+     * Sets whether it is flipped, which informs how to transform image coordinates later.
+     *
+     * @param isFlipped whether the image is flipped. Should set it to true when the image is from the
+     *                  front camera.
+     */
+    public void setImageFlipped(boolean isFlipped) {
+        synchronized (lock) {
+            this.isImageFlipped = isFlipped;
         }
         postInvalidate();
     }

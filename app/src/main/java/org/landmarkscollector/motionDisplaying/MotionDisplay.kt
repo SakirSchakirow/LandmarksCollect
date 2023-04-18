@@ -19,6 +19,8 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
 import com.google.mediapipe.tasks.vision.core.RunningMode
+import com.google.mlkit.vision.facemesh.FaceMesh
+import com.google.mlkit.vision.pose.PoseLandmark
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import org.landmarkscollector.data.Frame
@@ -80,6 +82,15 @@ fun MotionDisplay() {
                     with(graphicOverlay) {
                         clear()
                         poseLandmarks?.let {
+
+                            // If left eye is one the left side of the screen,
+                            // hence on the right side of human,
+                            // then  image is flipped
+                            graphicOverlay.setImageFlipped(
+                                poseLandmarks[PoseLandmark.LEFT_EYE].x <
+                                        poseLandmarks[PoseLandmark.RIGHT_EYE].x
+                            )
+
                             add(
                                 PoseGraphic(
                                     overlay = this,
@@ -90,6 +101,19 @@ fun MotionDisplay() {
                             )
                         }
                         faceLandmarks?.let {
+
+                            val leftEye = faceLandmarks.find {
+                                it.landmarkIndex == FaceMesh.LEFT_EYE.toUInt()
+                            }!!
+                            val rightEye = faceLandmarks.find {
+                                it.landmarkIndex == FaceMesh.RIGHT_EYE.toUInt()
+                            }!!
+
+                            // If left eye is one the left side of the screen,
+                            // hence on the right side of human,
+                            // then  image is flipped
+                            graphicOverlay.setImageFlipped(leftEye.x < rightEye.x)
+
                             add(
                                 FaceMeshGraphic(
                                     overlay = this,

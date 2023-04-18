@@ -57,8 +57,8 @@ internal constructor(
         }
 
         val nose = landmarks[PoseLandmark.NOSE]
-        val lefyEyeInner = landmarks[PoseLandmark.LEFT_EYE_INNER]
-        val lefyEye = landmarks[PoseLandmark.LEFT_EYE]
+        val leftEyeInner = landmarks[PoseLandmark.LEFT_EYE_INNER]
+        val leftEye = landmarks[PoseLandmark.LEFT_EYE]
         val leftEyeOuter = landmarks[PoseLandmark.LEFT_EYE_OUTER]
         val rightEyeInner = landmarks[PoseLandmark.RIGHT_EYE_INNER]
         val rightEye = landmarks[PoseLandmark.RIGHT_EYE]
@@ -93,9 +93,9 @@ internal constructor(
         val rightFootIndex = landmarks[PoseLandmark.RIGHT_FOOT_INDEX]
 
         // Face
-        drawLine(canvas, nose, lefyEyeInner, whitePaint)
-        drawLine(canvas, lefyEyeInner, lefyEye, whitePaint)
-        drawLine(canvas, lefyEye, leftEyeOuter, whitePaint)
+        drawLine(canvas, nose, leftEyeInner, whitePaint)
+        drawLine(canvas, leftEyeInner, leftEye, whitePaint)
+        drawLine(canvas, leftEye, leftEyeOuter, whitePaint)
         drawLine(canvas, leftEyeOuter, leftEar, whitePaint)
         drawLine(canvas, nose, rightEyeInner, whitePaint)
         drawLine(canvas, rightEyeInner, rightEye, whitePaint)
