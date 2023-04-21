@@ -9,6 +9,7 @@ import androidx.camera.core.Preview
 import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.camera.view.PreviewView
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.Button
 import androidx.compose.material3.Text
@@ -16,6 +17,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLifecycleOwner
+import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.content.ContextCompat
 import com.google.accompanist.permissions.ExperimentalPermissionsApi
@@ -23,6 +25,8 @@ import com.google.accompanist.permissions.PermissionRequired
 import com.google.accompanist.permissions.rememberPermissionState
 import com.google.mediapipe.tasks.vision.core.RunningMode
 import com.google.mlkit.common.MlKitException
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import org.landmarkscollector.hands.HandLandmarkerHelper
 import org.landmarkscollector.hands.LandmarkerListener
 import org.landmarkscollector.hands.OverlayView
@@ -32,6 +36,9 @@ import org.landmarkscollector.mlkit.detectors.DetectorProcessor
 import java.util.concurrent.Executors
 import kotlin.coroutines.resume
 import kotlin.coroutines.suspendCoroutine
+import kotlin.time.Duration.Companion.seconds
+
+const val FRAMES_SECS = 10
 
 @OptIn(ExperimentalPermissionsApi::class)
 @Composable
@@ -169,21 +176,39 @@ fun CameraScreen() {
         },
         permissionNotAvailableContent = { /* ... */ }
     ) {
-        Box(
-            modifier = Modifier.fillMaxSize()
-        ) {
-            AndroidView(
-                factory = { previewView },
+        Column {
+            Box(
                 modifier = Modifier.fillMaxSize()
-            )
-            AndroidView(
-                factory = { overlayView },
-                modifier = Modifier.fillMaxSize()
-            )
-            AndroidView(
-                factory = { graphicOverlay },
-                modifier = Modifier.fillMaxSize()
-            )
+            ) {
+                AndroidView(
+                    factory = { previewView },
+                    modifier = Modifier.fillMaxSize()
+                )
+                AndroidView(
+                    factory = { overlayView },
+                    modifier = Modifier.fillMaxSize()
+                )
+                AndroidView(
+                    factory = { graphicOverlay },
+                    modifier = Modifier.fillMaxSize()
+                )
+                Column {
+                    val timerScope = rememberCoroutineScope()
+                    var timerTicks by remember { mutableStateOf(FRAMES_SECS) }
+                    Text("Timer: $timerTicks", fontSize = 25.sp)
+                    Button(onClick = {
+                        timerScope.launch {
+                            timerTicks = FRAMES_SECS
+                            while (timerTicks > 0) {
+                                delay(1.seconds)
+                                timerTicks--
+                            }
+                        }
+                    }) {
+                        Text("Start Timer", fontSize = 25.sp)
+                    }
+                }
+            }
         }
     }
 }
