@@ -35,15 +35,12 @@ import androidx.core.content.ContextCompat
 import com.google.accompanist.permissions.ExperimentalPermissionsApi
 import com.google.accompanist.permissions.PermissionRequired
 import com.google.accompanist.permissions.rememberPermissionState
-import com.google.mediapipe.tasks.vision.core.RunningMode
 import com.google.mlkit.common.MlKitException
 import org.landmarkscollector.data.Landmark.Hand
 import org.landmarkscollector.motionRecording.State.Steady
 import org.landmarkscollector.motionRecording.State.Steady.ReadyToStartRecording
 import org.landmarkscollector.hands.HandLandmarkerHelper
-import org.landmarkscollector.hands.LandmarkerListener
 import org.landmarkscollector.hands.OverlayView
-import org.landmarkscollector.hands.ResultBundle
 import org.landmarkscollector.mlkit.GraphicOverlay
 import org.landmarkscollector.mlkit.detectors.DetectorProcessor
 import org.landmarkscollector.mlkit.detectors.DetectorResult
@@ -51,9 +48,7 @@ import java.util.concurrent.Executors
 import kotlin.coroutines.resume
 import kotlin.coroutines.suspendCoroutine
 
-@OptIn(
-    ExperimentalPermissionsApi::class, ExperimentalMaterial3Api::class
-)
+@OptIn(ExperimentalPermissionsApi::class)
 @androidx.annotation.OptIn(ExperimentalGetImage::class)
 @Composable
 fun CameraScreen(
@@ -96,27 +91,14 @@ fun CameraScreen(
             lateinit var handLandmarkerHelper: HandLandmarkerHelper
             val backgroundExecutor = Executors.newSingleThreadExecutor()
             backgroundExecutor.execute {
-                handLandmarkerHelper = HandLandmarkerHelper(context, object : LandmarkerListener {
-
-                    override fun onError(error: String) {
-                        Log.e("CameraScreen", error)
-                    }
-
-                    override fun onResults(resultBundle: ResultBundle) {
-                        ContextCompat.getMainExecutor(context).execute {
-                            onHandResults(resultBundle.handLandmarks)
-                            with(overlayView) {
-                                setResults(
-                                    handLandmarks = resultBundle.handLandmarks,
-                                    imageHeight = resultBundle.inputImageHeight,
-                                    imageWidth = resultBundle.inputImageWidth,
-                                    runningMode = RunningMode.LIVE_STREAM
-                                )
-                                invalidate()
-                            }
-                        }
-                    }
-                })
+                handLandmarkerHelper = HandLandmarkerHelper(
+                    context = context,
+                    landmarkerListener = HandsLandmarkerListener(
+                        mainExecutor = ContextCompat.getMainExecutor(context),
+                        overlayView = overlayView,
+                        onHandResults = onHandResults
+                    )
+                )
             }
 
             with(suspendCoroutine { continuation ->
@@ -202,127 +184,185 @@ fun CameraScreen(
         },
         permissionNotAvailableContent = { /* ... */ }
     ) {
-        Column {
-            Box(
+        StateContent(
+            state,
+            onDirectoryChosen,
+            onGestureNameChanged,
+            onStartRecordingPressed,
+            onPauseRecordingPressed,
+            onResumeRecordingPressed,
+            onStopRecordingPressed,
+            previewView,
+            graphicOverlay,
+            overlayView
+        )
+    }
+}
+
+@Composable
+fun StateContent(
+    state: State,
+    onDirectoryChosen: (directory: Uri) -> Unit,
+    onGestureNameChanged: (gestureName: String) -> Unit,
+    onStartRecordingPressed: () -> Unit,
+    onPauseRecordingPressed: () -> Unit,
+    onResumeRecordingPressed: () -> Unit,
+    onStopRecordingPressed: () -> Unit,
+    previewView: PreviewView,
+    graphicOverlay: GraphicOverlay,
+    overlayView: OverlayView,
+) {
+    Column {
+        Box(
+            modifier = Modifier.fillMaxSize()
+        ) {
+            AndroidView(
+                factory = { previewView },
                 modifier = Modifier.fillMaxSize()
-            ) {
-                AndroidView(
-                    factory = { previewView },
-                    modifier = Modifier.fillMaxSize()
-                )
-                AndroidView(
-                    factory = { graphicOverlay },
-                    modifier = Modifier.fillMaxSize()
-                )
-                AndroidView(
-                    factory = { overlayView },
-                    modifier = Modifier.fillMaxSize()
-                )
-                Column {
-                    when (state) {
-                        is Steady -> {
-                            var gestureName by remember { mutableStateOf("") }
-                            val pickPathLauncher = rememberLauncherForActivityResult(
-                                contract = ActivityResultContracts.OpenDocumentTree(),
-                                onResult = { uri ->
-                                    if (uri != null) {
-                                        onDirectoryChosen(uri)
-                                    }
-                                }
-                            )
-                            Button(onClick = {
-                                pickPathLauncher.launch(null)
-                            }) {
-                                val action = if (state is ReadyToStartRecording)
-                                    "Change"
-                                else
-                                    "Choose"
-                                Text("$action directory to save CSVs", fontSize = 25.sp)
-                            }
-                            val focusManager = LocalFocusManager.current
-                            OutlinedTextField(
-                                value = gestureName,
-                                maxLines = 1,
-                                onValueChange = { text ->
-                                    gestureName = text
-                                    onGestureNameChanged(text)
-                                },
-                                label = { Text("Gesture Name (.csv file name)") },
-                                keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
-                                keyboardActions = KeyboardActions(
-                                    onDone = { focusManager.clearFocus() }
-                                )
-                            )
-                            if (state is ReadyToStartRecording) {
-                                Button(
-                                    onClick = onStartRecordingPressed
-                                ) {
-                                    Text("Start Recording", fontSize = 25.sp)
-                                }
-                                Text(
-                                    "Gesture-directory path: ${state.directoryUri.path}",
-                                    fontSize = 16.sp
-                                )
-                                Text(
-                                    "Gesture will be recorded in files: ${state.gestureName}_N.csv",
-                                    fontSize = 16.sp
-                                )
-                            }
-                        }
+            )
+            AndroidView(
+                factory = { graphicOverlay },
+                modifier = Modifier.fillMaxSize()
+            )
+            AndroidView(
+                factory = { overlayView },
+                modifier = Modifier.fillMaxSize()
+            )
+            Column {
+                when (state) {
+                    is Steady -> Steady(
+                        state,
+                        onDirectoryChosen,
+                        onGestureNameChanged,
+                        onStartRecordingPressed
+                    )
 
-                        is State.Recording.Pausable -> {
-                            Row {
-                                Button(
-                                    onClick = if (state.isPaused) onResumeRecordingPressed else onPauseRecordingPressed
-                                ) {
-                                    Text(
-                                        text = if (state.isPaused) "▶️Resume" else "⏸️Pause",
-                                        fontSize = 25.sp
-                                    )
-                                }
-                                Button(
-                                    onClick = onStopRecordingPressed
-                                ) {
-                                    Text("⏹️Stop", fontSize = 25.sp)
-                                }
-                            }
-                            when (state) {
-                                is State.Recording.Pausable.PreparingForTheNextRecording -> {
-                                    val gestureNum = state.gestureNum.dec()
-                                    if (gestureNum != UInt.MIN_VALUE) {
-                                        Text(
-                                            "Gesture ${state.gestureName} #: $gestureNum is saved",
-                                            fontSize = 20.sp
-                                        )
-                                    }
-                                    Text(
-                                        "⏱️Recording #${state.gestureNum} will start in: ${state.delayTicks}",
-                                        fontSize = 25.sp
-                                    )
-                                }
+                    is State.Recording.Pausable -> Pausable(
+                        state, onPauseRecordingPressed,
+                        onResumeRecordingPressed,
+                        onStopRecordingPressed
+                    )
 
-                                is State.Recording.Pausable.RecordingMotion -> {
-                                    Text(
-                                        "Gesture ${state.gestureName} #: ${state.gestureNum}",
-                                        fontSize = 20.sp
-                                    )
-                                    Text("\uD83D\uDD34 Live: Recording", fontSize = 23.sp)
-                                    Text("Time seconds left: ${state.timeLeft}", fontSize = 25.sp)
-                                }
-                            }
-                        }
-
-                        is State.Recording.SavingPreviousMotion -> {
-                            Text("💾 Saving...", fontSize = 25.sp)
-                            Text("Done: ${state.savingProgress}%", fontSize = 25.sp)
-                            Text(
-                                "Gesture ${state.gestureName} #: ${state.gestureNum}",
-                                fontSize = 20.sp
-                            )
-                        }
-                    }
+                    is State.Recording.SavingPreviousMotion -> SavingPreviousMotion(state)
                 }
             }
         }
     }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun Steady(
+    state: Steady,
+    onDirectoryChosen: (directory: Uri) -> Unit,
+    onGestureNameChanged: (gestureName: String) -> Unit,
+    onStartRecordingPressed: () -> Unit,
+) {
+    var gestureName by remember { mutableStateOf("") }
+    val pickPathLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.OpenDocumentTree(),
+        onResult = { uri ->
+            if (uri != null) {
+                onDirectoryChosen(uri)
+            }
+        }
+    )
+    Button(onClick = {
+        pickPathLauncher.launch(null)
+    }) {
+        val action = if (state is ReadyToStartRecording)
+            "Change"
+        else
+            "Choose"
+        Text("$action directory to save CSVs", fontSize = 25.sp)
+    }
+    val focusManager = LocalFocusManager.current
+    OutlinedTextField(
+        value = gestureName,
+        maxLines = 1,
+        onValueChange = { text ->
+            gestureName = text
+            onGestureNameChanged(text)
+        },
+        label = { Text("Gesture Name (.csv file name)") },
+        keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
+        keyboardActions = KeyboardActions(
+            onDone = { focusManager.clearFocus() }
+        )
+    )
+    if (state is ReadyToStartRecording) {
+        Button(
+            onClick = onStartRecordingPressed
+        ) {
+            Text("Start Recording", fontSize = 25.sp)
+        }
+        Text(
+            "Gesture-directory path: ${state.directoryUri.path}",
+            fontSize = 16.sp
+        )
+        Text(
+            "Gesture will be recorded in files: ${state.gestureName}_N.csv",
+            fontSize = 16.sp
+        )
+    }
+}
+
+@Composable
+fun Pausable(
+    state: State.Recording.Pausable,
+    onPauseRecordingPressed: () -> Unit,
+    onResumeRecordingPressed: () -> Unit,
+    onStopRecordingPressed: () -> Unit,
+) {
+    Row {
+        Button(
+            onClick = if (state.isPaused) onResumeRecordingPressed else onPauseRecordingPressed
+        ) {
+            Text(
+                text = if (state.isPaused) "▶️Resume" else "⏸️Pause",
+                fontSize = 25.sp
+            )
+        }
+        Button(
+            onClick = onStopRecordingPressed
+        ) {
+            Text("⏹️Stop", fontSize = 25.sp)
+        }
+    }
+    when (state) {
+        is State.Recording.Pausable.PreparingForTheNextRecording -> {
+            val gestureNum = state.gestureNum.dec()
+            if (gestureNum != UInt.MIN_VALUE) {
+                Text(
+                    "Gesture ${state.gestureName} #: $gestureNum is saved",
+                    fontSize = 20.sp
+                )
+            }
+            Text(
+                "⏱️Recording #${state.gestureNum} will start in: ${state.delayTicks}",
+                fontSize = 25.sp
+            )
+        }
+
+        is State.Recording.Pausable.RecordingMotion -> {
+            Text(
+                "Gesture ${state.gestureName} #: ${state.gestureNum}",
+                fontSize = 20.sp
+            )
+            Text("\uD83D\uDD34 Live: Recording", fontSize = 23.sp)
+            Text("Time seconds left: ${state.timeLeft}", fontSize = 25.sp)
+        }
+    }
+}
+
+@Composable
+fun SavingPreviousMotion(
+    state: State.Recording.SavingPreviousMotion,
+) {
+    Text("💾 Saving...", fontSize = 25.sp)
+    Text("Done: ${state.savingProgress}%", fontSize = 25.sp)
+    Text(
+        "Gesture ${state.gestureName} #: ${state.gestureNum}",
+        fontSize = 20.sp
+    )
 }
