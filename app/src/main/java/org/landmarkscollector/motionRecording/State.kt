@@ -10,21 +10,61 @@ internal sealed interface State {
 
     sealed class LiveCamera : State {
 
+        fun configuration() = Triple(isOneHandGesture, isGpuEnabled, camera.isCurrentFrontFacing)
+
+        abstract val isOneHandGesture: Boolean
+
+        abstract val isGpuEnabled: Boolean
+
         abstract val camera: CamerasAvailable
+
+        abstract fun copy(
+            isOneHandGesture: Boolean = this.isOneHandGesture,
+            isGpuEnabled: Boolean = this.isGpuEnabled,
+            camera: CamerasAvailable = this.camera,
+        ): LiveCamera
 
         sealed class Steady : LiveCamera() {
 
             data class WaitingForDirectoryAndGesture(
                 val directoryUri: Uri? = null,
                 val gestureName: String? = null,
+                override val isOneHandGesture: Boolean = false,
+                override val isGpuEnabled: Boolean = false,
                 override val camera: CamerasAvailable,
-            ) : Steady()
+            ) : Steady() {
+
+                override fun copy(
+                    isOneHandGesture: Boolean,
+                    isGpuEnabled: Boolean,
+                    camera: CamerasAvailable,
+                ): LiveCamera = copy(
+                    gestureName = gestureName,
+                    isOneHandGesture = isOneHandGesture,
+                    isGpuEnabled = isGpuEnabled,
+                    camera = camera
+                )
+            }
 
             data class ReadyToStartRecording(
                 val directoryUri: Uri,
                 val gestureName: String,
+                override val isOneHandGesture: Boolean,
+                override val isGpuEnabled: Boolean,
                 override val camera: CamerasAvailable,
-            ) : Steady()
+            ) : Steady() {
+
+                override fun copy(
+                    isOneHandGesture: Boolean,
+                    isGpuEnabled: Boolean,
+                    camera: CamerasAvailable,
+                ): LiveCamera = copy(
+                    directoryUri = directoryUri,
+                    isOneHandGesture = isOneHandGesture,
+                    isGpuEnabled = isGpuEnabled,
+                    camera = camera
+                )
+            }
         }
 
         sealed class Recording : LiveCamera() {
@@ -42,8 +82,22 @@ internal sealed interface State {
                     override val gestureNum: UInt,
                     override val isPaused: Boolean = false,
                     val delayTicks: UInt = DELAY_SECS,
+                    override val isOneHandGesture: Boolean,
+                    override val isGpuEnabled: Boolean,
                     override val camera: CamerasAvailable,
-                ) : Pausable()
+                ) : Pausable() {
+
+                    override fun copy(
+                        isOneHandGesture: Boolean,
+                        isGpuEnabled: Boolean,
+                        camera: CamerasAvailable,
+                    ): LiveCamera = copy(
+                        directoryUri = directoryUri,
+                        isOneHandGesture = isOneHandGesture,
+                        isGpuEnabled = isGpuEnabled,
+                        camera = camera
+                    )
+                }
 
                 data class RecordingMotion(
                     override val directoryUri: Uri,
@@ -53,8 +107,22 @@ internal sealed interface State {
                     val timeLeft: UInt = MAX_FRAMES_SECS,
                     val hands: LandmarksRecording = LandmarksRecording(),
                     val facePose: LandmarksRecording = LandmarksRecording(),
+                    override val isOneHandGesture: Boolean,
+                    override val isGpuEnabled: Boolean,
                     override val camera: CamerasAvailable,
-                ) : Pausable()
+                ) : Pausable() {
+
+                    override fun copy(
+                        isOneHandGesture: Boolean,
+                        isGpuEnabled: Boolean,
+                        camera: CamerasAvailable,
+                    ): LiveCamera = copy(
+                        directoryUri = directoryUri,
+                        isOneHandGesture = isOneHandGesture,
+                        isGpuEnabled = isGpuEnabled,
+                        camera = camera
+                    )
+                }
             }
 
             data class SavingPreviousMotion(
@@ -62,8 +130,22 @@ internal sealed interface State {
                 override val gestureName: String,
                 override val gestureNum: UInt,
                 val savingProgress: UInt = UInt.MIN_VALUE,
+                override val isOneHandGesture: Boolean,
+                override val isGpuEnabled: Boolean,
                 override val camera: CamerasAvailable,
-            ) : Recording()
+            ) : Recording() {
+
+                override fun copy(
+                    isOneHandGesture: Boolean,
+                    isGpuEnabled: Boolean,
+                    camera: CamerasAvailable,
+                ): LiveCamera = copy(
+                    directoryUri = directoryUri,
+                    isOneHandGesture = isOneHandGesture,
+                    isGpuEnabled = isGpuEnabled,
+                    camera = camera
+                )
+            }
         }
     }
 

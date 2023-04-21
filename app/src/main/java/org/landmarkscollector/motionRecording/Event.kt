@@ -32,6 +32,10 @@ internal sealed interface Event {
         object OnStopRecording : Ui
 
         object OnToggleCamera : Ui
+
+        object OnToggleHandsCount : Ui
+
+        object OnToggleCpuGpu : Ui
     }
 
     sealed interface Internal : Event {

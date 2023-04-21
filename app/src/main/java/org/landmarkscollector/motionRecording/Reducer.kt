@@ -48,6 +48,8 @@ internal class Reducer(
                             directoryUri = currentState.directoryUri,
                             gestureName = currentState.gestureName,
                             gestureNum = currentState.gestureNum,
+                            isOneHandGesture = currentState.isOneHandGesture,
+                            isGpuEnabled = currentState.isGpuEnabled,
                             camera = currentState.camera
                         )
                     }
@@ -79,12 +81,16 @@ internal class Reducer(
                             directoryUri = currentState.directoryUri,
                             gestureName = currentState.gestureName,
                             gestureNum = currentState.gestureNum.inc(),
+                            isOneHandGesture = currentState.isOneHandGesture,
+                            isGpuEnabled = currentState.isGpuEnabled,
                             camera = currentState.camera
                         )
                     } else {
                         WaitingForDirectoryAndGesture(
                             directoryUri = currentState.directoryUri,
                             gestureName = currentState.gestureName,
+                            isOneHandGesture = currentState.isOneHandGesture,
+                            isGpuEnabled = currentState.isGpuEnabled,
                             camera = currentState.camera
                         )
                     }
@@ -102,6 +108,8 @@ internal class Reducer(
                             directoryUri = currentState.directoryUri,
                             gestureName = currentState.gestureName,
                             gestureNum = currentState.gestureNum,
+                            isOneHandGesture = currentState.isOneHandGesture,
+                            isGpuEnabled = currentState.isGpuEnabled,
                             camera = currentState.camera
                         )
                     }
@@ -121,8 +129,10 @@ internal class Reducer(
                         currentState.copy(directoryUri = event.directory)
                     } else {
                         ReadyToStartRecording(
-                            event.directory,
-                            currentGestureName,
+                            directoryUri = event.directory,
+                            gestureName = currentGestureName,
+                            isOneHandGesture = currentState.isOneHandGesture,
+                            isGpuEnabled = currentState.isGpuEnabled,
                             camera = currentState.camera
                         )
                     }
@@ -164,6 +174,8 @@ internal class Reducer(
                         ReadyToStartRecording(
                             currentDirectory,
                             event.gestureName,
+                            isOneHandGesture = currentState.isOneHandGesture,
+                            isGpuEnabled = currentState.isGpuEnabled,
                             camera = currentState.camera
                         )
                     }
@@ -199,6 +211,8 @@ internal class Reducer(
                         directoryUri = currentState.directoryUri,
                         gestureName = currentState.gestureName,
                         gestureNum = 1u,
+                        isOneHandGesture = currentState.isOneHandGesture,
+                        isGpuEnabled = currentState.isGpuEnabled,
                         camera = currentState.camera
                     )
                 }
@@ -231,6 +245,8 @@ internal class Reducer(
                     WaitingForDirectoryAndGesture(
                         directoryUri = currentState.directoryUri,
                         gestureName = currentState.gestureName,
+                        isOneHandGesture = currentState.isOneHandGesture,
+                        isGpuEnabled = currentState.isGpuEnabled,
                         camera = currentState.camera
                     )
                 }
@@ -259,6 +275,18 @@ internal class Reducer(
                     WaitingForDirectoryAndGesture(
                         camera = event.camerasInfo
                     )
+                }
+            }
+
+            Ui.OnToggleCpuGpu -> if (currentState is LiveCamera) {
+                state {
+                    currentState.copy(isGpuEnabled = currentState.isGpuEnabled.not())
+                }
+            }
+
+            Ui.OnToggleHandsCount -> if (currentState is LiveCamera) {
+                state {
+                    currentState.copy(isOneHandGesture = currentState.isOneHandGesture.not())
                 }
             }
         }

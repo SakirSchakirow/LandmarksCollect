@@ -14,8 +14,8 @@ class HandsLandmarkerListener(
     private val onHandResults: (handsResults: List<List<Landmark.Hand>>) -> Unit,
 ) : LandmarkerListener {
 
-    override fun onError(error: String) {
-        Log.e("CameraScreen", error)
+    override fun onError(error: Exception) {
+        Log.e("CameraScreen", error.message ?: "Hands landmarker exception")
     }
 
     override fun onResults(resultBundle: ResultBundle) {

@@ -7,13 +7,13 @@ import org.landmarkscollector.data.Landmark.Hand
 data class ResultBundle(
     val handLandmarks: List<List<Hand>>,
     val inputImageHeight: Int,
-    val inputImageWidth: Int
+    val inputImageWidth: Int,
 ) {
 
     constructor(
         handLandmarkerResult: HandLandmarkerResult,
         inputImageHeight: Int,
-        inputImageWidth: Int
+        inputImageWidth: Int,
     ) : this(handLandmarkerResult.toHandLandmarks(), inputImageHeight, inputImageWidth)
 
     companion object {
@@ -29,7 +29,7 @@ data class ResultBundle(
         }
 
         private fun List<NormalizedLandmark>.getHandLandmarks(
-            isRightHand: Boolean
+            isRightHand: Boolean,
         ): List<Hand> = mapIndexed { index, normalizedLandmark ->
             normalizedLandmark.toHandLandmark(
                 index.toUInt(),
@@ -39,7 +39,7 @@ data class ResultBundle(
 
         private fun NormalizedLandmark.toHandLandmark(
             index: UInt,
-            isRightHand: Boolean
+            isRightHand: Boolean,
         ): Hand = with(this) {
             if (isRightHand) {
                 Hand.Right(index, x(), y(), z())

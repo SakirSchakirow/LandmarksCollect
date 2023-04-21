@@ -43,6 +43,8 @@ internal class MainActivity : ComponentActivity(), ElmRendererDelegate<Effect, S
                         state = state,
                         onCameraInfoReceived = { store.accept(Event.Ui.OnCamerasInfoReceived(it)) },
                         onCameraToggle = { store.accept(Event.Ui.OnToggleCamera) },
+                        onHandsToggle = { store.accept(Event.Ui.OnToggleHandsCount) },
+                        onGpuToggle = { store.accept(Event.Ui.OnToggleCpuGpu) },
                         onDirectoryChosen = { store.accept(Event.Ui.OnDirectoryChosen(it)) },
                         onGestureNameChanged = { store.accept(Event.Ui.OnGestureNameChanged(it)) },
                         onStartRecordingPressed = { store.accept(Event.Ui.OnStartRecordingPressed) },

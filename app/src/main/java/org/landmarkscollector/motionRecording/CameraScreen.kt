@@ -62,6 +62,8 @@ internal fun CameraScreen(
     state: State,
     onCameraInfoReceived: (camerasInfo: CamerasInfo) -> Unit,
     onCameraToggle: (isChecked: Boolean) -> Unit,
+    onHandsToggle: (isOneHandGesture: Boolean) -> Unit,
+    onGpuToggle: (isGpu: Boolean) -> Unit,
     onDirectoryChosen: (directory: Uri) -> Unit,
     onGestureNameChanged: (gestureName: String) -> Unit,
     onStartRecordingPressed: () -> Unit,
@@ -94,21 +96,8 @@ internal fun CameraScreen(
 
         LaunchedEffect(
             key1 = previewView,
-            key2 = if (state is State.LiveCamera) state.camera.isCurrentFrontFacing else state
+            key2 = if (state is State.LiveCamera) state.configuration() else state
         ) {
-            lateinit var handLandmarkerHelper: HandLandmarkerHelper
-            val backgroundExecutor = Executors.newSingleThreadExecutor()
-            backgroundExecutor.execute {
-                handLandmarkerHelper = HandLandmarkerHelper(
-                    context = context,
-                    landmarkerListener = HandsLandmarkerListener(
-                        mainExecutor = ContextCompat.getMainExecutor(context),
-                        overlayView = overlayView,
-                        onHandResults = onHandResults
-                    )
-                )
-            }
-
             with(suspendCoroutine { continuation ->
                 ProcessCameraProvider.getInstance(context).also { future ->
                     future.addListener(
@@ -120,6 +109,21 @@ internal fun CameraScreen(
                 }
             }) {
                 if (state is State.LiveCamera) {
+                    lateinit var handLandmarkerHelper: HandLandmarkerHelper
+                    val backgroundExecutor = Executors.newSingleThreadExecutor()
+                    backgroundExecutor.execute {
+                        handLandmarkerHelper = HandLandmarkerHelper(
+                            context = context,
+                            isOneHand = state.isOneHandGesture,
+                            isGpu = state.isGpuEnabled,
+                            landmarkerListener = HandsLandmarkerListener(
+                                mainExecutor = ContextCompat.getMainExecutor(context),
+                                overlayView = overlayView,
+                                onHandResults = onHandResults
+                            )
+                        )
+                    }
+
                     val detectorProcessor = DetectorProcessor(context)
                     var needUpdateGraphicOverlayImageSourceInfo = true
                     unbindAll()
@@ -215,6 +219,8 @@ internal fun CameraScreen(
         StateContent(
             state,
             onCameraToggle,
+            onHandsToggle,
+            onGpuToggle,
             onDirectoryChosen,
             onGestureNameChanged,
             onStartRecordingPressed,
@@ -232,6 +238,8 @@ internal fun CameraScreen(
 internal fun StateContent(
     state: State,
     onCameraToggle: (isChecked: Boolean) -> Unit,
+    onHandsToggle: (isOneHandGesture: Boolean) -> Unit,
+    onGpuToggle: (isGpu: Boolean) -> Unit,
     onDirectoryChosen: (directory: Uri) -> Unit,
     onGestureNameChanged: (gestureName: String) -> Unit,
     onStartRecordingPressed: () -> Unit,
@@ -263,6 +271,8 @@ internal fun StateContent(
                     is Steady -> Steady(
                         state,
                         onCameraToggle,
+                        onHandsToggle,
+                        onGpuToggle,
                         onDirectoryChosen,
                         onGestureNameChanged,
                         onStartRecordingPressed
@@ -289,6 +299,8 @@ internal fun StateContent(
 internal fun Steady(
     state: Steady,
     onCameraToggle: (isChecked: Boolean) -> Unit,
+    onHandsToggle: (isOneHandGesture: Boolean) -> Unit,
+    onGpuToggle: (isGpu: Boolean) -> Unit,
     onDirectoryChosen: (directory: Uri) -> Unit,
     onGestureNameChanged: (gestureName: String) -> Unit,
     onStartRecordingPressed: () -> Unit,
@@ -306,6 +318,28 @@ internal fun Steady(
                     onCheckedChange = onCameraToggle
                 )
             }
+        }
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Text(
+                "Hands detected: ${if (state.isOneHandGesture) "One 🖐️" else "Two 🙌"}",
+                fontSize = 20.sp
+            )
+            Spacer(modifier = Modifier.size(12.dp))
+            Switch(
+                checked = state.isOneHandGesture,
+                onCheckedChange = onHandsToggle
+            )
+        }
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Text(
+                "${if (state.isGpuEnabled) "GPU 🖼️" else "CPU 🧮"} used",
+                fontSize = 20.sp
+            )
+            Spacer(modifier = Modifier.size(12.dp))
+            Switch(
+                checked = state.isGpuEnabled,
+                onCheckedChange = onGpuToggle
+            )
         }
         var gestureName by remember { mutableStateOf("") }
         val pickPathLauncher = rememberLauncherForActivityResult(
