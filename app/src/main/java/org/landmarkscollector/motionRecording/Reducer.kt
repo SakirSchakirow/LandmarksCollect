@@ -3,6 +3,7 @@ package org.landmarkscollector.motionRecording
 import org.landmarkscollector.data.CsvRow
 import org.landmarkscollector.data.Landmark
 import org.landmarkscollector.domain.repository.FileCreator
+import org.landmarkscollector.motionRecording.CamerasInfo.CamerasAvailable.AllTypes
 import org.landmarkscollector.motionRecording.Command.PrepareForGestureRecording
 import org.landmarkscollector.motionRecording.Command.SaveRecording
 import org.landmarkscollector.motionRecording.Command.StartRecording
@@ -12,15 +13,17 @@ import org.landmarkscollector.motionRecording.Event.Internal.RecordIsSaving
 import org.landmarkscollector.motionRecording.Event.Internal.RecordingSaved
 import org.landmarkscollector.motionRecording.Event.Internal.RecordingTimeLeft
 import org.landmarkscollector.motionRecording.Event.Internal.WaitingForTheNextMotionRecording
+import org.landmarkscollector.motionRecording.State.*
 import org.landmarkscollector.motionRecording.State.Companion.TOTAL_GESTURES_NUM
-import org.landmarkscollector.motionRecording.State.Recording.Pausable
-import org.landmarkscollector.motionRecording.State.Recording.Pausable.PreparingForTheNextRecording
-import org.landmarkscollector.motionRecording.State.Recording.Pausable.RecordingMotion
-import org.landmarkscollector.motionRecording.State.Recording.SavingPreviousMotion
-import org.landmarkscollector.motionRecording.State.Steady.WaitingForDirectoryAndGesture
+import org.landmarkscollector.motionRecording.State.LiveCamera.*
+import org.landmarkscollector.motionRecording.State.LiveCamera.Recording.Pausable
+import org.landmarkscollector.motionRecording.State.LiveCamera.Recording.Pausable.PreparingForTheNextRecording
+import org.landmarkscollector.motionRecording.State.LiveCamera.Recording.Pausable.RecordingMotion
+import org.landmarkscollector.motionRecording.State.LiveCamera.Recording.SavingPreviousMotion
+import org.landmarkscollector.motionRecording.State.LiveCamera.Steady.*
 import vivid.money.elmslie.core.store.dsl_reducer.ScreenDslReducer
 
-class Reducer(
+internal class Reducer(
     private val fileCreator: FileCreator,
 ) : ScreenDslReducer<Event, Ui, Internal, State, Effect, Command>(
     uiEventClass = Ui::class,
@@ -45,7 +48,7 @@ class Reducer(
                             directoryUri = currentState.directoryUri,
                             gestureName = currentState.gestureName,
                             gestureNum = currentState.gestureNum,
-                            isFrontCamera = currentState.isFrontCamera
+                            camera = currentState.camera
                         )
                     }
 
@@ -76,12 +79,13 @@ class Reducer(
                             directoryUri = currentState.directoryUri,
                             gestureName = currentState.gestureName,
                             gestureNum = currentState.gestureNum.inc(),
-                            isFrontCamera = currentState.isFrontCamera
+                            camera = currentState.camera
                         )
                     } else {
                         WaitingForDirectoryAndGesture(
                             directoryUri = currentState.directoryUri,
-                            gestureName = currentState.gestureName
+                            gestureName = currentState.gestureName,
+                            camera = currentState.camera
                         )
                     }
                 }
@@ -98,7 +102,7 @@ class Reducer(
                             directoryUri = currentState.directoryUri,
                             gestureName = currentState.gestureName,
                             gestureNum = currentState.gestureNum,
-                            isFrontCamera = currentState.isFrontCamera
+                            camera = currentState.camera
                         )
                     }
                     commands { +StartRecording }
@@ -116,10 +120,10 @@ class Reducer(
                     if (currentGestureName == null) {
                         currentState.copy(directoryUri = event.directory)
                     } else {
-                        State.Steady.ReadyToStartRecording(
+                        ReadyToStartRecording(
                             event.directory,
                             currentGestureName,
-                            isFrontCamera = currentState.isFrontCamera
+                            camera = currentState.camera
                         )
                     }
                 }
@@ -157,9 +161,10 @@ class Reducer(
                     if (currentDirectory == null) {
                         currentState.copy(gestureName = event.gestureName)
                     } else {
-                        State.Steady.ReadyToStartRecording(
+                        ReadyToStartRecording(
                             currentDirectory,
-                            event.gestureName
+                            event.gestureName,
+                            camera = currentState.camera
                         )
                     }
                 }
@@ -188,13 +193,13 @@ class Reducer(
                 }
             }
 
-            is Ui.OnStartRecordingPressed -> if (currentState is State.Steady.ReadyToStartRecording) {
+            is Ui.OnStartRecordingPressed -> if (currentState is ReadyToStartRecording) {
                 state {
                     PreparingForTheNextRecording(
                         directoryUri = currentState.directoryUri,
                         gestureName = currentState.gestureName,
                         gestureNum = 1u,
-                        isFrontCamera = currentState.isFrontCamera
+                        camera = currentState.camera
                     )
                 }
                 commands { +PrepareForGestureRecording }
@@ -225,18 +230,35 @@ class Reducer(
                 state {
                     WaitingForDirectoryAndGesture(
                         directoryUri = currentState.directoryUri,
-                        gestureName = currentState.gestureName
+                        gestureName = currentState.gestureName,
+                        camera = currentState.camera
                     )
                 }
             }
 
-            Ui.OnToggleCamera -> when {
-                currentState is WaitingForDirectoryAndGesture -> state {
-                    currentState.copy(isFrontCamera = currentState.isFrontCamera.not())
-                }
+            Ui.OnToggleCamera -> {
+                if (currentState is Steady) {
+                    val camerasInfo = currentState.camera
+                    if (camerasInfo is AllTypes) {
+                        val toggledCamera = camerasInfo.isCurrentFrontFacing.not()
+                        when (currentState) {
+                            is WaitingForDirectoryAndGesture -> state {
+                                currentState.copy(camera = AllTypes(toggledCamera))
+                            }
 
-                currentState is State.Steady.ReadyToStartRecording -> state {
-                    currentState.copy(isFrontCamera = currentState.isFrontCamera.not())
+                            is ReadyToStartRecording -> state {
+                                currentState.copy(camera = AllTypes(toggledCamera))
+                            }
+                        }
+                    }
+                }
+            }
+
+            is Ui.OnCamerasInfoReceived -> if (currentState is NoCameraPermitted && event.camerasInfo is CamerasInfo.CamerasAvailable) {
+                state {
+                    WaitingForDirectoryAndGesture(
+                        camera = event.camerasInfo
+                    )
                 }
             }
         }

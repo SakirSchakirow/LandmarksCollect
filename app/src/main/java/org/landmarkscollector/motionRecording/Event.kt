@@ -1,13 +1,14 @@
 package org.landmarkscollector.motionRecording
 
 import android.net.Uri
-import androidx.camera.core.ImageProxy
 import org.landmarkscollector.data.Landmark.Hand
 import org.landmarkscollector.mlkit.detectors.DetectorResult
 
-sealed interface Event {
+internal sealed interface Event {
 
     sealed interface Ui : Event {
+        class OnCamerasInfoReceived(val camerasInfo: CamerasInfo) : Ui
+
         class OnDirectoryChosen(
             val directory: Uri,
         ) : Ui
@@ -22,9 +23,7 @@ sealed interface Event {
             val handsResults: List<List<Hand>>,
         ) : Ui
 
-        class OnFacePoseResults(
-            val imageProxy: ImageProxy, val result: DetectorResult,
-        ) : Ui
+        class OnFacePoseResults(val result: DetectorResult) : Ui
 
         object OnResumeRecording : Ui
 

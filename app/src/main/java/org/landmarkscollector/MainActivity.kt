@@ -18,7 +18,7 @@ import vivid.money.elmslie.android.renderer.ElmRenderer
 import vivid.money.elmslie.android.renderer.ElmRendererDelegate
 import vivid.money.elmslie.core.store.Store
 
-class MainActivity : ComponentActivity(), ElmRendererDelegate<Effect, State> {
+internal class MainActivity : ComponentActivity(), ElmRendererDelegate<Effect, State> {
 
     init {
         ElmRenderer(this, lifecycle)
@@ -41,6 +41,7 @@ class MainActivity : ComponentActivity(), ElmRendererDelegate<Effect, State> {
                 ) {
                     CameraScreen(
                         state = state,
+                        onCameraInfoReceived = { store.accept(Event.Ui.OnCamerasInfoReceived(it)) },
                         onCameraToggle = { store.accept(Event.Ui.OnToggleCamera) },
                         onDirectoryChosen = { store.accept(Event.Ui.OnDirectoryChosen(it)) },
                         onGestureNameChanged = { store.accept(Event.Ui.OnGestureNameChanged(it)) },
@@ -49,9 +50,7 @@ class MainActivity : ComponentActivity(), ElmRendererDelegate<Effect, State> {
                         onPauseRecordingPressed = { store.accept(Event.Ui.OnPauseRecording) },
                         onResumeRecordingPressed = { store.accept(Event.Ui.OnResumeRecording) },
                         onStopRecordingPressed = { store.accept(Event.Ui.OnStopRecording) },
-                        onFacePoseResults = { imageProxy, result ->
-                            store.accept(Event.Ui.OnFacePoseResults(imageProxy, result))
-                        }
+                        onFacePoseResults = { store.accept(Event.Ui.OnFacePoseResults(it)) }
                     )
                 }
             }

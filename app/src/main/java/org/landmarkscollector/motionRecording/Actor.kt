@@ -17,8 +17,8 @@ import org.landmarkscollector.motionRecording.State.Companion.MAX_FRAMES_SECS
 import vivid.money.elmslie.core.store.DefaultActor
 import kotlin.time.Duration.Companion.seconds
 
-class Actor(
-    private val exportRepository: ExportRepository
+internal class Actor(
+    private val exportRepository: ExportRepository,
 ) : DefaultActor<Command, Event> {
 
     private val recordingSemaphore: Semaphore = Semaphore(1)
@@ -104,7 +104,7 @@ class Actor(
     private fun MutableList<CsvRow>.addLandmarks(
         frameNumber: UInt,
         rows: Map<String, CsvRow>,
-        landmarkType: Landmark.LandmarkType
+        landmarkType: Landmark.LandmarkType,
     ) {
         for (landmarkIndex in UInt.MIN_VALUE until landmarkType.totalLandmarkNumber) {
             val rowId = landmarkType.rowId(frameNumber, landmarkIndex)

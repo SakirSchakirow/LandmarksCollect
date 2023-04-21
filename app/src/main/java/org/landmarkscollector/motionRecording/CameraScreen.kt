@@ -9,12 +9,9 @@ import androidx.camera.core.AspectRatio
 import androidx.camera.core.CameraSelector
 import androidx.camera.core.ExperimentalGetImage
 import androidx.camera.core.ImageAnalysis
-import androidx.camera.core.ImageProxy
 import androidx.camera.core.Preview
 import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.camera.view.PreviewView
-import androidx.compose.foundation.horizontalScroll
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -44,13 +41,16 @@ import com.google.accompanist.permissions.PermissionRequired
 import com.google.accompanist.permissions.rememberPermissionState
 import com.google.mlkit.common.MlKitException
 import org.landmarkscollector.data.Landmark.Hand
-import org.landmarkscollector.motionRecording.State.Steady
-import org.landmarkscollector.motionRecording.State.Steady.ReadyToStartRecording
 import org.landmarkscollector.hands.HandLandmarkerHelper
 import org.landmarkscollector.hands.OverlayView
 import org.landmarkscollector.mlkit.GraphicOverlay
 import org.landmarkscollector.mlkit.detectors.DetectorProcessor
 import org.landmarkscollector.mlkit.detectors.DetectorResult
+import org.landmarkscollector.motionRecording.CamerasInfo.CamerasAvailable.AllTypes
+import org.landmarkscollector.motionRecording.CamerasInfo.CamerasAvailable.OnlyBack
+import org.landmarkscollector.motionRecording.CamerasInfo.CamerasAvailable.OnlyFacing
+import org.landmarkscollector.motionRecording.State.LiveCamera.Steady
+import org.landmarkscollector.motionRecording.State.LiveCamera.Steady.ReadyToStartRecording
 import java.util.concurrent.Executors
 import kotlin.coroutines.resume
 import kotlin.coroutines.suspendCoroutine
@@ -58,8 +58,9 @@ import kotlin.coroutines.suspendCoroutine
 @OptIn(ExperimentalPermissionsApi::class)
 @androidx.annotation.OptIn(ExperimentalGetImage::class)
 @Composable
-fun CameraScreen(
+internal fun CameraScreen(
     state: State,
+    onCameraInfoReceived: (camerasInfo: CamerasInfo) -> Unit,
     onCameraToggle: (isChecked: Boolean) -> Unit,
     onDirectoryChosen: (directory: Uri) -> Unit,
     onGestureNameChanged: (gestureName: String) -> Unit,
@@ -68,7 +69,7 @@ fun CameraScreen(
     onResumeRecordingPressed: () -> Unit,
     onStopRecordingPressed: () -> Unit,
     onHandResults: (handsResults: List<List<Hand>>) -> Unit,
-    onFacePoseResults: (imageProxy: ImageProxy, result: DetectorResult) -> Unit,
+    onFacePoseResults: (result: DetectorResult) -> Unit,
 ) {
     val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
@@ -91,7 +92,10 @@ fun CameraScreen(
 
     if (cameraPermissionState.hasPermission) {
 
-        LaunchedEffect(previewView, state.isFrontCamera) {
+        LaunchedEffect(
+            key1 = previewView,
+            key2 = if (state is State.LiveCamera) state.camera.isCurrentFrontFacing else state
+        ) {
             lateinit var handLandmarkerHelper: HandLandmarkerHelper
             val backgroundExecutor = Executors.newSingleThreadExecutor()
             backgroundExecutor.execute {
@@ -115,65 +119,86 @@ fun CameraScreen(
                     )
                 }
             }) {
-                val detectorProcessor = DetectorProcessor(context)
-                var needUpdateGraphicOverlayImageSourceInfo = true
-                unbindAll()
-                bindToLifecycle(
-                    lifecycleOwner,
-                    if (state.isFrontCamera) CameraSelector.DEFAULT_FRONT_CAMERA else CameraSelector.DEFAULT_BACK_CAMERA,
-                    Preview.Builder()
-                        .setTargetAspectRatio(AspectRatio.RATIO_4_3)
-                        .setTargetRotation(previewView.display.rotation)
-                        .build()
-                        .apply { setSurfaceProvider(previewView.surfaceProvider) },
-                    ImageAnalysis.Builder()
-                        .setTargetAspectRatio(AspectRatio.RATIO_4_3)
-                        .setTargetRotation(previewView.display.rotation)
-                        .setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
-                        .setOutputImageFormat(ImageAnalysis.OUTPUT_IMAGE_FORMAT_YUV_420_888)
-                        .build()
-                        // The analyzer can then be assigned to the instance
-                        .apply {
-                            setAnalyzer(backgroundExecutor) { imageProxy ->
-                                handLandmarkerHelper.detectLiveStream(
-                                    imageProxy = imageProxy,
-                                    isFrontCamera = state.isFrontCamera
-                                )
-                                if (needUpdateGraphicOverlayImageSourceInfo) {
-                                    val isImageFlipped = state.isFrontCamera
-                                    val rotationDegrees = imageProxy.imageInfo.rotationDegrees
-                                    if (rotationDegrees == 0 || rotationDegrees == 180) {
-                                        graphicOverlay.setImageSourceInfo(
-                                            imageProxy.width,
-                                            imageProxy.height,
-                                            isImageFlipped
-                                        )
-                                    } else {
-                                        graphicOverlay.setImageSourceInfo(
-                                            imageProxy.height,
-                                            imageProxy.width,
-                                            isImageFlipped
+                if (state is State.LiveCamera) {
+                    val detectorProcessor = DetectorProcessor(context)
+                    var needUpdateGraphicOverlayImageSourceInfo = true
+                    unbindAll()
+                    bindToLifecycle(
+                        lifecycleOwner,
+                        when (state.camera) {
+                            is AllTypes -> if (state.camera.isCurrentFrontFacing) CameraSelector.DEFAULT_FRONT_CAMERA else CameraSelector.DEFAULT_BACK_CAMERA
+                            OnlyBack -> CameraSelector.DEFAULT_BACK_CAMERA
+                            OnlyFacing -> CameraSelector.DEFAULT_FRONT_CAMERA
+                        },
+                        Preview.Builder()
+                            .setTargetAspectRatio(AspectRatio.RATIO_4_3)
+                            .setTargetRotation(previewView.display.rotation)
+                            .build()
+                            .apply { setSurfaceProvider(previewView.surfaceProvider) },
+                        ImageAnalysis.Builder()
+                            .setTargetAspectRatio(AspectRatio.RATIO_4_3)
+                            .setTargetRotation(previewView.display.rotation)
+                            .setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
+                            .setOutputImageFormat(ImageAnalysis.OUTPUT_IMAGE_FORMAT_YUV_420_888)
+                            .build()
+                            // The analyzer can then be assigned to the instance
+                            .apply {
+                                setAnalyzer(backgroundExecutor) { imageProxy ->
+                                    handLandmarkerHelper.detectLiveStream(
+                                        imageProxy = imageProxy,
+                                        isFrontCamera = state.camera.isCurrentFrontFacing
+                                    )
+                                    if (needUpdateGraphicOverlayImageSourceInfo) {
+                                        val isImageFlipped = state.camera.isCurrentFrontFacing
+                                        val rotationDegrees =
+                                            imageProxy.imageInfo.rotationDegrees
+                                        if (rotationDegrees == 0 || rotationDegrees == 180) {
+                                            graphicOverlay.setImageSourceInfo(
+                                                imageProxy.width,
+                                                imageProxy.height,
+                                                isImageFlipped
+                                            )
+                                        } else {
+                                            graphicOverlay.setImageSourceInfo(
+                                                imageProxy.height,
+                                                imageProxy.width,
+                                                isImageFlipped
+                                            )
+                                        }
+                                        needUpdateGraphicOverlayImageSourceInfo = false
+                                    }
+                                    try {
+                                        detectorProcessor
+                                            .processImageProxy(
+                                                imageProxy,
+                                                graphicOverlay
+                                            ) { detectorResult ->
+                                                onFacePoseResults(detectorResult)
+                                            }
+                                    } catch (e: MlKitException) {
+                                        Log.e(
+                                            "CameraScreen",
+                                            "Failed to process image. Error: " + e.localizedMessage
                                         )
                                     }
-                                    needUpdateGraphicOverlayImageSourceInfo = false
-                                }
-                                try {
-                                    detectorProcessor
-                                        .processImageProxy(
-                                            imageProxy,
-                                            graphicOverlay
-                                        ) { detectorResult ->
-                                            onFacePoseResults(imageProxy, detectorResult)
-                                        }
-                                } catch (e: MlKitException) {
-                                    Log.e(
-                                        "CameraScreen",
-                                        "Failed to process image. Error: " + e.localizedMessage
-                                    )
                                 }
                             }
-                        }
-                )
+                    )
+                } else {
+                    val isCameraAvailable = availableCameraInfos.isNotEmpty()
+                    val isFrontCameraAvailable = availableCameraInfos
+                        .find { it.lensFacing == CameraSelector.LENS_FACING_FRONT } != null
+                    val isBackCameraAvailable = availableCameraInfos
+                        .find { it.lensFacing == CameraSelector.LENS_FACING_BACK } != null
+                    val camerasInfo = when {
+                        isCameraAvailable.not() -> CamerasInfo.NoCameras
+                        isFrontCameraAvailable && isBackCameraAvailable -> AllTypes()
+                        isFrontCameraAvailable -> OnlyFacing
+                        isBackCameraAvailable -> OnlyBack
+                        else -> CamerasInfo.UnknownCameras
+                    }
+                    onCameraInfoReceived(camerasInfo)
+                }
             }
         }
     }
@@ -204,7 +229,7 @@ fun CameraScreen(
 }
 
 @Composable
-fun StateContent(
+internal fun StateContent(
     state: State,
     onCameraToggle: (isChecked: Boolean) -> Unit,
     onDirectoryChosen: (directory: Uri) -> Unit,
@@ -243,13 +268,16 @@ fun StateContent(
                         onStartRecordingPressed
                     )
 
-                    is State.Recording.Pausable -> Pausable(
+                    is State.LiveCamera.Recording.Pausable -> Pausable(
                         state, onPauseRecordingPressed,
                         onResumeRecordingPressed,
                         onStopRecordingPressed
                     )
 
-                    is State.Recording.SavingPreviousMotion -> SavingPreviousMotion(state)
+                    is State.LiveCamera.Recording.SavingPreviousMotion -> SavingPreviousMotion(state)
+                    State.NoCameraPermitted -> {
+                        /* Nothing to build - maybe specific design is required */
+                    }
                 }
             }
         }
@@ -258,7 +286,7 @@ fun StateContent(
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun Steady(
+internal fun Steady(
     state: Steady,
     onCameraToggle: (isChecked: Boolean) -> Unit,
     onDirectoryChosen: (directory: Uri) -> Unit,
@@ -267,9 +295,17 @@ fun Steady(
 ) {
     Column(horizontalAlignment = Alignment.End) {
         Row(verticalAlignment = Alignment.CenterVertically) {
-            Text("${if (state.isFrontCamera) "Front 🤳" else "Back 📸"} camera", fontSize = 20.sp)
+            Text(
+                "${if (state.camera.isCurrentFrontFacing) "Front 🤳" else "Back 📸"} camera",
+                fontSize = 20.sp
+            )
             Spacer(modifier = Modifier.size(12.dp))
-            Switch(checked = state.isFrontCamera, onCheckedChange = onCameraToggle)
+            if (state.camera is AllTypes) {
+                Switch(
+                    checked = state.camera.isCurrentFrontFacing,
+                    onCheckedChange = onCameraToggle
+                )
+            }
         }
         var gestureName by remember { mutableStateOf("") }
         val pickPathLauncher = rememberLauncherForActivityResult(
@@ -327,8 +363,8 @@ fun Steady(
 }
 
 @Composable
-fun Pausable(
-    state: State.Recording.Pausable,
+internal fun Pausable(
+    state: State.LiveCamera.Recording.Pausable,
     onPauseRecordingPressed: () -> Unit,
     onResumeRecordingPressed: () -> Unit,
     onStopRecordingPressed: () -> Unit,
@@ -349,7 +385,7 @@ fun Pausable(
         }
     }
     when (state) {
-        is State.Recording.Pausable.PreparingForTheNextRecording -> {
+        is State.LiveCamera.Recording.Pausable.PreparingForTheNextRecording -> {
             val gestureNum = state.gestureNum.dec()
             if (gestureNum != UInt.MIN_VALUE) {
                 Text(
@@ -363,7 +399,7 @@ fun Pausable(
             )
         }
 
-        is State.Recording.Pausable.RecordingMotion -> {
+        is State.LiveCamera.Recording.Pausable.RecordingMotion -> {
             Text(
                 "Gesture ${state.gestureName} #: ${state.gestureNum}",
                 fontSize = 20.sp
@@ -375,8 +411,8 @@ fun Pausable(
 }
 
 @Composable
-fun SavingPreviousMotion(
-    state: State.Recording.SavingPreviousMotion,
+internal fun SavingPreviousMotion(
+    state: State.LiveCamera.Recording.SavingPreviousMotion,
 ) {
     Text("💾 Saving...", fontSize = 25.sp)
     Text("Done: ${state.savingProgress}%", fontSize = 25.sp)

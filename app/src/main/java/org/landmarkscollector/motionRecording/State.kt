@@ -2,63 +2,69 @@ package org.landmarkscollector.motionRecording
 
 import android.net.Uri
 import org.landmarkscollector.data.LandmarksRecording
+import org.landmarkscollector.motionRecording.CamerasInfo.CamerasAvailable
 
-sealed class State {
+internal sealed interface State {
 
-    abstract val isFrontCamera: Boolean
+    object NoCameraPermitted : State
 
-    sealed class Steady : State() {
+    sealed class LiveCamera : State {
 
-        data class WaitingForDirectoryAndGesture(
-            val directoryUri: Uri? = null,
-            val gestureName: String? = null,
-            override val isFrontCamera: Boolean = true,
-        ) : Steady()
+        abstract val camera: CamerasAvailable
 
-        data class ReadyToStartRecording(
-            val directoryUri: Uri,
-            val gestureName: String,
-            override val isFrontCamera: Boolean = true,
-        ) : Steady()
-    }
+        sealed class Steady : LiveCamera() {
 
-    sealed class Recording : State() {
-        abstract val directoryUri: Uri
-        abstract val gestureName: String
-        abstract val gestureNum: UInt
+            data class WaitingForDirectoryAndGesture(
+                val directoryUri: Uri? = null,
+                val gestureName: String? = null,
+                override val camera: CamerasAvailable,
+            ) : Steady()
 
-        sealed class Pausable : Recording() {
+            data class ReadyToStartRecording(
+                val directoryUri: Uri,
+                val gestureName: String,
+                override val camera: CamerasAvailable,
+            ) : Steady()
+        }
 
-            abstract val isPaused: Boolean
+        sealed class Recording : LiveCamera() {
+            abstract val directoryUri: Uri
+            abstract val gestureName: String
+            abstract val gestureNum: UInt
 
-            data class PreparingForTheNextRecording(
+            sealed class Pausable : Recording() {
+
+                abstract val isPaused: Boolean
+
+                data class PreparingForTheNextRecording(
+                    override val directoryUri: Uri,
+                    override val gestureName: String,
+                    override val gestureNum: UInt,
+                    override val isPaused: Boolean = false,
+                    val delayTicks: UInt = DELAY_SECS,
+                    override val camera: CamerasAvailable,
+                ) : Pausable()
+
+                data class RecordingMotion(
+                    override val directoryUri: Uri,
+                    override val gestureName: String,
+                    override val gestureNum: UInt = 1u,
+                    override val isPaused: Boolean = false,
+                    val timeLeft: UInt = MAX_FRAMES_SECS,
+                    val hands: LandmarksRecording = LandmarksRecording(),
+                    val facePose: LandmarksRecording = LandmarksRecording(),
+                    override val camera: CamerasAvailable,
+                ) : Pausable()
+            }
+
+            data class SavingPreviousMotion(
                 override val directoryUri: Uri,
                 override val gestureName: String,
                 override val gestureNum: UInt,
-                override val isPaused: Boolean = false,
-                val delayTicks: UInt = DELAY_SECS,
-                override val isFrontCamera: Boolean,
-            ) : Pausable()
-
-            data class RecordingMotion(
-                override val directoryUri: Uri,
-                override val gestureName: String,
-                override val gestureNum: UInt = 1u,
-                override val isPaused: Boolean = false,
-                val timeLeft: UInt = MAX_FRAMES_SECS,
-                val hands: LandmarksRecording = LandmarksRecording(),
-                val facePose: LandmarksRecording = LandmarksRecording(),
-                override val isFrontCamera: Boolean,
-            ) : Pausable()
+                val savingProgress: UInt = UInt.MIN_VALUE,
+                override val camera: CamerasAvailable,
+            ) : Recording()
         }
-
-        data class SavingPreviousMotion(
-            override val directoryUri: Uri,
-            override val gestureName: String,
-            override val gestureNum: UInt,
-            val savingProgress: UInt = UInt.MIN_VALUE,
-            override val isFrontCamera: Boolean,
-        ) : Recording()
     }
 
     companion object {
