@@ -1,6 +1,5 @@
 package org.landmarkscollector.elm
 
-import android.content.Context
 import android.net.Uri
 import androidx.camera.core.ImageProxy
 import com.google.mediapipe.tasks.vision.handlandmarker.HandLandmarkerResult
@@ -17,7 +16,7 @@ sealed interface Event {
             val gestureName: String
         ) : Ui
 
-        class OnStartRecordingPressed(val context: Context) : Ui
+        object OnStartRecordingPressed : Ui
 
         class OnHandResults(
             val results: HandLandmarkerResult
