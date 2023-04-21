@@ -43,10 +43,10 @@ class CameraScreenViewModel(
 
     private val dataConverter: DataConverter = DataConverterCSV()
 
-    private var facePoseFrames = 0
+    private var facePoseFrames = UInt.MIN_VALUE
     private val csvRowsFacePose = HashMap<String, CsvRow>()
 
-    private var handsFrames = 0
+    private var handsFrames = UInt.MIN_VALUE
     private val csvRowsHands = HashMap<String, CsvRow>()
 
     val currentGestureName: StateFlow<String?> = savedStateHandle.getStateFlow(KEY_GESTURE, null)
@@ -103,14 +103,15 @@ class CameraScreenViewModel(
 
     fun onHandResults(handLandmarkerResult: HandLandmarkerResult) {
         if (isRecordingOn.value) {
+            val frame = handsFrames++
             val landmarks = handLandmarkerResult.landmarks()
             val handednesses = handLandmarkerResult.handednesses()
+
             landmarks.mapIndexed { index, normalizedLandmarks ->
                 val handedness = handednesses.getOrNull(index)?.firstOrNull()
                 requireNotNull(handedness) { "Both info on landmarks and handedness should be available" }
                 val marks = normalizedLandmarks.getLandmarks(handedness.categoryName() == "Right")
 
-                val frame = handsFrames++
                 csvRowsHands.putAll(
                     marks.map { mark ->
                         mark.toCsvRow(frame)
@@ -128,7 +129,7 @@ class CameraScreenViewModel(
             // thus, we consider normalized-z preserve the same ratio
             val normalizedZ = normalizedX * x / z
             Pose(
-                landmarkIndex = poseLandmark.landmarkType,
+                landmarkIndex = poseLandmark.landmarkType.toUInt(),
                 x = normalizedX,
                 y = normalizedY,
                 z = normalizedZ
@@ -144,7 +145,7 @@ class CameraScreenViewModel(
             // thus, we consider normalized-z preserve the same ratio
             val normalizedZ = normalizedX * x / z
             Face(
-                landmarkIndex = faceMeshPoint.index,
+                landmarkIndex = faceMeshPoint.index.toUInt(),
                 x = normalizedX,
                 y = normalizedY,
                 z = normalizedZ
@@ -155,12 +156,12 @@ class CameraScreenViewModel(
     private fun List<NormalizedLandmark>.getLandmarks(isRightHand: Boolean): List<Landmark> =
         mapIndexed { index, normalizedLandmark ->
             normalizedLandmark.toLandmark(
-                index,
+                index.toUInt(),
                 isRightHand
             )
         }
 
-    private fun NormalizedLandmark.toLandmark(index: Int, isRightHand: Boolean): Landmark =
+    private fun NormalizedLandmark.toLandmark(index: UInt, isRightHand: Boolean): Landmark =
         with(this) {
             if (isRightHand) {
                 Right(index, x(), y(), z())
@@ -169,7 +170,7 @@ class CameraScreenViewModel(
             }
         }
 
-    private fun Landmark.toCsvRow(frame: Int): CsvRow {
+    private fun Landmark.toCsvRow(frame: UInt): CsvRow {
         return CsvRow(
             frame = frame,
             landmark = this
@@ -198,20 +199,20 @@ class CameraScreenViewModel(
             futureCsvFile = futureCsvFile.uri
         ).launchIn(viewModelScope)
         csvRowsFacePose.clear()
-        facePoseFrames = 0
+        facePoseFrames = UInt.MIN_VALUE
         csvRowsHands.clear()
-        handsFrames = 0
+        handsFrames = UInt.MIN_VALUE
     }
 
     private fun getFulfilledFramesCsvRows(
         facesPoses: Map<String, CsvRow>,
-        facesPosesNumber: Int,
+        facesPosesNumber: UInt,
         hands: Map<String, CsvRow>,
-        handsNumber: Int,
+        handsNumber: UInt,
     ): List<CsvRow> {
-        val totalFramesNumber = min(facesPosesNumber, handsNumber)
+        val totalFramesNumber = min(facesPosesNumber.toInt(), handsNumber.toInt()).toUInt()
         return buildList {
-            for (frameNumber in 0 until totalFramesNumber) {
+            for (frameNumber in UInt.MIN_VALUE until totalFramesNumber) {
                 addLandmarks(frameNumber, facesPoses, LandmarkType.Face)
                 addLandmarks(frameNumber, hands, LandmarkType.RightHand)
                 addLandmarks(frameNumber, hands, LandmarkType.LeftHand)
@@ -221,11 +222,11 @@ class CameraScreenViewModel(
     }
 
     private fun MutableList<CsvRow>.addLandmarks(
-        frameNumber: Int,
+        frameNumber: UInt,
         rows: Map<String, CsvRow>,
         landmarkType: LandmarkType
     ) {
-        for (landmarkIndex in 0 until landmarkType.totalLandmarkNumber) {
+        for (landmarkIndex in UInt.MIN_VALUE until landmarkType.totalLandmarkNumber) {
             val rowId = landmarkType.rowId(frameNumber, landmarkIndex)
             val csvRow = rows[rowId] ?: empty(frameNumber, landmarkIndex, landmarkType)
             add(csvRow)

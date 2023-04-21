@@ -3,8 +3,8 @@ package org.landmarkscollector.data
 import org.landmarkscollector.data.Landmark.LandmarkType
 
 data class CsvRow(
-    val frame: Int,
-    val landmarkIndex: Int,
+    val frame: UInt,
+    val landmarkIndex: UInt,
     val rowId: String,
     val type: String,
     val x: Float?,
@@ -13,7 +13,7 @@ data class CsvRow(
 ) {
 
     constructor(
-        frame: Int,
+        frame: UInt,
         landmark: Landmark
     ) : this(
         frame = frame,
@@ -28,8 +28,8 @@ data class CsvRow(
     companion object {
 
         fun empty(
-            frameNumber: Int,
-            landmarkIndex: Int,
+            frameNumber: UInt,
+            landmarkIndex: UInt,
             landmarkType: LandmarkType
         ) = CsvRow(
             frame = frameNumber,
@@ -42,12 +42,12 @@ data class CsvRow(
         )
 
         fun LandmarkType.rowId(
-            frameNumber: Int,
-            landmarkIndex: Int,
+            frameNumber: UInt,
+            landmarkIndex: UInt,
         ): String = "$frameNumber-$label-$landmarkIndex"
 
         private fun Landmark.rowId(
-            frameNumber: Int
+            frameNumber: UInt
         ): String = "$frameNumber-${type.label}-$landmarkIndex"
     }
 }
