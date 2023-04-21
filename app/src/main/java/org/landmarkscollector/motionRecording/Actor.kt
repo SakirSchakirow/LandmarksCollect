@@ -1,4 +1,4 @@
-package org.landmarkscollector.camera
+package org.landmarkscollector.motionRecording
 
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
@@ -10,10 +10,10 @@ import org.landmarkscollector.data.CsvRow.Companion.rowId
 import org.landmarkscollector.data.Landmark
 import org.landmarkscollector.data.Resource
 import org.landmarkscollector.domain.repository.ExportRepository
-import org.landmarkscollector.camera.Event.Internal.RecordingTimeLeft
-import org.landmarkscollector.camera.Event.Internal.WaitingForTheNextMotionRecording
-import org.landmarkscollector.camera.State.Companion.DELAY_SECS
-import org.landmarkscollector.camera.State.Companion.MAX_FRAMES_SECS
+import org.landmarkscollector.motionRecording.Event.Internal.RecordingTimeLeft
+import org.landmarkscollector.motionRecording.Event.Internal.WaitingForTheNextMotionRecording
+import org.landmarkscollector.motionRecording.State.Companion.DELAY_SECS
+import org.landmarkscollector.motionRecording.State.Companion.MAX_FRAMES_SECS
 import vivid.money.elmslie.core.store.DefaultActor
 import kotlin.time.Duration.Companion.seconds
 

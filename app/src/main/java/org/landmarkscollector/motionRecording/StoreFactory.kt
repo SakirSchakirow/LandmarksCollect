@@ -1,4 +1,4 @@
-package org.landmarkscollector.camera
+package org.landmarkscollector.motionRecording
 
 import android.content.Context
 import org.landmarkscollector.domain.repository.ExportRepositoryImpl

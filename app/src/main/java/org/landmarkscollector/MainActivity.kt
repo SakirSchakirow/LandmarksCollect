@@ -8,11 +8,11 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.ui.Modifier
-import org.landmarkscollector.camera.Effect
-import org.landmarkscollector.camera.CameraScreen
-import org.landmarkscollector.camera.Event
-import org.landmarkscollector.camera.State
-import org.landmarkscollector.camera.storeFactory
+import org.landmarkscollector.motionRecording.Effect
+import org.landmarkscollector.motionRecording.CameraScreen
+import org.landmarkscollector.motionRecording.Event
+import org.landmarkscollector.motionRecording.State
+import org.landmarkscollector.motionRecording.storeFactory
 import org.landmarkscollector.ui.theme.LandmarksCollectorTheme
 import vivid.money.elmslie.android.renderer.ElmRenderer
 import vivid.money.elmslie.android.renderer.ElmRendererDelegate
