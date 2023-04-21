@@ -67,12 +67,10 @@ public class GraphicOverlay extends View {
     // The factor of overlay View size to image size. Anything in the image coordinates need to be
     // scaled by this amount to fit with the area of overlay View.
     private float scaleFactor = 1.0f;
-    // The number of horizontal pixels needed to be cropped on each side to fit the image with the
+    // The number of horizontal pixels needed to be added to  on each side to fit the image with the
     // area of overlay View after scaling.
     private float postScaleWidthOffset;
-    // The number of vertical pixels needed to be cropped on each side to fit the image with the
-    // area of overlay View after scaling.
-    private float postScaleHeightOffset;
+
     private boolean isImageFlipped;
     private boolean needUpdateTransformation = true;
 
@@ -145,7 +143,7 @@ public class GraphicOverlay extends View {
          * Adjusts the y coordinate from the image's coordinate system to the view coordinate system.
          */
         public float translateY(float y) {
-            return scale(y) - overlay.postScaleHeightOffset;
+            return scale(y);
         }
 
         /**
@@ -292,20 +290,18 @@ public class GraphicOverlay extends View {
         float viewAspectRatio = (float) getWidth() / getHeight();
         float imageAspectRatio = (float) imageWidth / imageHeight;
         postScaleWidthOffset = 0;
-        postScaleHeightOffset = 0;
         if (viewAspectRatio > imageAspectRatio) {
             // The image needs to be vertically cropped to be displayed in this view.
             scaleFactor = (float) getWidth() / imageWidth;
-            postScaleHeightOffset = ((float) getWidth() / imageAspectRatio - getHeight()) / 2;
         } else {
             // The image needs to be horizontally cropped to be displayed in this view.
             scaleFactor = (float) getHeight() / imageHeight;
-            postScaleWidthOffset = ((float) getHeight() * imageAspectRatio - getWidth()) / 2;
+            postScaleWidthOffset = (float) getHeight() * imageAspectRatio - getWidth();
         }
 
         transformationMatrix.reset();
         transformationMatrix.setScale(scaleFactor, scaleFactor);
-        transformationMatrix.postTranslate(-postScaleWidthOffset, -postScaleHeightOffset);
+        transformationMatrix.postTranslate(-postScaleWidthOffset, 0);
 
         if (isImageFlipped) {
             transformationMatrix.postScale(-1f, 1f, getWidth() / 2f, getHeight() / 2f);
