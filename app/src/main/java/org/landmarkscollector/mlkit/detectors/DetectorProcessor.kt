@@ -5,7 +5,7 @@ import android.util.Log
 import androidx.camera.core.ExperimentalGetImage
 import com.google.android.gms.tasks.Task
 import com.google.mlkit.vision.common.InputImage
-import com.google.mlkit.vision.demo.kotlin.posedetector.PoseGraphic
+import org.landmarkscollector.mlkit.pose.PoseGraphic
 import com.google.mlkit.vision.facemesh.FaceMeshDetection
 import com.google.mlkit.vision.facemesh.FaceMeshDetector
 import com.google.mlkit.vision.facemesh.FaceMeshDetectorOptions
@@ -41,7 +41,13 @@ class DetectorProcessor(context: Context) : VisionProcessorBase<DetectorResult>(
             .continueWithTask { facesTask ->
                 poseDetector.process(image)
                     .continueWith(classificationExecutor) { poseTask ->
-                        DetectorResult(facesTask.result, poseTask.result)
+                        // Taking only one face that has been detected
+                        DetectorResult(
+                            imageWidth = image.width,
+                            imageHeight = image.height,
+                            faceMeshes = facesTask.result.first(),
+                            poseLandmarks = poseTask.result.allPoseLandmarks
+                        )
                     }
             }
     }
@@ -52,7 +58,7 @@ class DetectorProcessor(context: Context) : VisionProcessorBase<DetectorResult>(
 
     override fun onSuccess(
         results: DetectorResult,
-        graphicOverlay: GraphicOverlay?
+        graphicOverlay: GraphicOverlay?,
     ): DetectorResult {
         graphicOverlay?.drawResults(results)
         return results
@@ -62,13 +68,18 @@ class DetectorProcessor(context: Context) : VisionProcessorBase<DetectorResult>(
         add(
             PoseGraphic(
                 overlay = this,
-                pose = results.pose,
-                visualizeZ = true,
-                rescaleZForVisualization = true
+                poseLandmarks = results.poseLandmarks,
+                results.imageWidth,
+                results.imageHeight
             )
         )
-        results.faces.forEach { face ->
-            add(FaceMeshGraphic(overlay = this, faceMesh = face))
-        }
+        add(
+            FaceMeshGraphic(
+                overlay = this,
+                points = results.faceLandmarks,
+                results.imageWidth,
+                results.imageHeight
+            )
+        )
     }
 }

@@ -1,8 +1,5 @@
 package org.landmarkscollector.motionRecording
 
-import androidx.camera.core.ImageProxy
-import com.google.mlkit.vision.facemesh.FaceMeshPoint
-import com.google.mlkit.vision.pose.PoseLandmark
 import org.landmarkscollector.data.CsvRow
 import org.landmarkscollector.data.Landmark
 import org.landmarkscollector.domain.repository.FileCreator
@@ -24,7 +21,7 @@ import org.landmarkscollector.motionRecording.State.Steady.WaitingForDirectoryAn
 import vivid.money.elmslie.core.store.dsl_reducer.ScreenDslReducer
 
 class Reducer(
-    private val fileCreator: FileCreator
+    private val fileCreator: FileCreator,
 ) : ScreenDslReducer<Event, Ui, Internal, State, Effect, Command>(
     uiEventClass = Ui::class,
     internalEventClass = Internal::class
@@ -131,21 +128,15 @@ class Reducer(
 
                 val csvRows = currentRecording.csvRows
 
-                val poseLandmarks = event.result.pose.allPoseLandmarks
-                    .map { toLandmark(event.imageProxy, it) }
-                val faceLandmarks = event.result.faces.firstOrNull()
-                    ?.allPoints
-                    ?.map { toLandmark(event.imageProxy, it) }
-
                 csvRows.putAll(
-                    poseLandmarks.map { landmark ->
+                    event.result.poseLandmarks.map { landmark ->
                         landmark.toCsvRow(currentRecording.frames)
                     }.associateBy(CsvRow::rowId)
                 )
-                faceLandmarks?.map { landmark ->
+                event.result.faceLandmarks.map { landmark ->
                     landmark.toCsvRow(currentRecording.frames)
-                }?.associateBy(CsvRow::rowId)
-                    ?.let(csvRows::putAll)
+                }.associateBy(CsvRow::rowId)
+                    .let(csvRows::putAll)
 
                 state {
                     currentState.copy(
@@ -234,38 +225,6 @@ class Reducer(
                     )
                 }
             }
-        }
-    }
-
-    private fun toLandmark(imageProxy: ImageProxy, poseLandmark: PoseLandmark): Landmark {
-        return with(poseLandmark.position3D) {
-            val normalizedX = x / imageProxy.width
-            val normalizedY = y / imageProxy.height
-            //the magnitude of z is roughly the same as x
-            // thus, we consider normalized-z preserve the same ratio
-            val normalizedZ = normalizedX * x / z
-            Landmark.Pose(
-                landmarkIndex = poseLandmark.landmarkType.toUInt(),
-                x = normalizedX,
-                y = normalizedY,
-                z = normalizedZ
-            )
-        }
-    }
-
-    private fun toLandmark(imageProxy: ImageProxy, faceMeshPoint: FaceMeshPoint): Landmark {
-        return with(faceMeshPoint.position) {
-            val normalizedX = x / imageProxy.width
-            val normalizedY = y / imageProxy.height
-            //the unit of measure for the z is the same as x and Y
-            // thus, we consider normalized-z preserve the same ratio
-            val normalizedZ = normalizedX * x / z
-            Landmark.Face(
-                landmarkIndex = faceMeshPoint.index.toUInt(),
-                x = normalizedX,
-                y = normalizedY,
-                z = normalizedZ
-            )
         }
     }
 

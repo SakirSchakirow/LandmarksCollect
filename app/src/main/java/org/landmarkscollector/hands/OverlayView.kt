@@ -80,7 +80,7 @@ class OverlayView(context: Context?) :
         handLandmarks: List<List<Hand>>,
         imageHeight: Int,
         imageWidth: Int,
-        runningMode: RunningMode
+        runningMode: RunningMode,
     ) {
         results = handLandmarks
 
@@ -100,6 +100,18 @@ class OverlayView(context: Context?) :
                 max(width * 1f / imageWidth, height * 1f / imageHeight)
             }
         }
+        invalidate()
+    }
+
+    fun setResults(
+        handLandmarks: List<List<Hand>>,
+    ) {
+        results = handLandmarks
+
+        imageWidth = width
+        imageHeight = height
+        scaleFactor = 1f
+
         invalidate()
     }
 
