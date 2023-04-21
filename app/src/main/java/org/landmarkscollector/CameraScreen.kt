@@ -4,6 +4,7 @@ import android.Manifest
 import android.util.Log
 import androidx.camera.core.AspectRatio
 import androidx.camera.core.CameraSelector
+import androidx.camera.core.ExperimentalGetImage
 import androidx.camera.core.ImageAnalysis
 import androidx.camera.core.Preview
 import androidx.camera.lifecycle.ProcessCameraProvider
@@ -51,8 +52,9 @@ const val GESTURES_NUM = 10
 const val MAX_FRAMES_SECS = 5
 
 @OptIn(
-    ExperimentalPermissionsApi::class, ExperimentalMaterial3Api::class,
+    ExperimentalPermissionsApi::class, ExperimentalMaterial3Api::class
 )
+@androidx.annotation.OptIn(ExperimentalGetImage::class)
 @Composable
 fun CameraScreen(
     viewModel: CameraScreenViewModel
@@ -167,7 +169,12 @@ fun CameraScreen(
                                 }
                                 try {
                                     detectorProcessor
-                                        .processImageProxy(imageProxy, graphicOverlay)
+                                        .processImageProxy(
+                                            imageProxy,
+                                            graphicOverlay
+                                        ) { detectorResult ->
+                                            viewModel.onFacePoseResults(detectorResult)
+                                        }
                                 } catch (e: MlKitException) {
                                     Log.e(
                                         "CameraScreen",

@@ -3,7 +3,6 @@ package org.landmarkscollector
 import android.util.Log
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
-import com.google.mediapipe.tasks.components.containers.Category
 import com.google.mediapipe.tasks.components.containers.NormalizedLandmark
 import com.google.mediapipe.tasks.vision.handlandmarker.HandLandmarkerResult
 import kotlinx.coroutines.flow.StateFlow
@@ -11,6 +10,7 @@ import org.landmarkscollector.data.CsvRow
 import org.landmarkscollector.data.Landmark
 import org.landmarkscollector.data.Landmark.Hand.Left
 import org.landmarkscollector.data.Landmark.Hand.Right
+import org.landmarkscollector.mlkit.detectors.DetectorResult
 
 class CameraScreenViewModel(
     private val savedStateHandle: SavedStateHandle
@@ -24,6 +24,10 @@ class CameraScreenViewModel(
     val currentGesture: StateFlow<String?> = savedStateHandle.getStateFlow(KEY_GESTURE, null)
     fun setGestureName(name: String) {
         savedStateHandle[KEY_GESTURE] = name
+    }
+
+    fun onFacePoseResults(result: DetectorResult) {
+        //TODOresult.
     }
 
     fun onHandResults(handLandmarkerResult: HandLandmarkerResult) {
