@@ -17,8 +17,9 @@ import org.landmarkscollector.camera.Event.Internal.RecordingSaved
 import org.landmarkscollector.camera.Event.Internal.RecordingTimeLeft
 import org.landmarkscollector.camera.Event.Internal.WaitingForTheNextMotionRecording
 import org.landmarkscollector.camera.State.Companion.TOTAL_GESTURES_NUM
-import org.landmarkscollector.camera.State.Recording.PreparingForTheNextRecording
-import org.landmarkscollector.camera.State.Recording.RecordingMotion
+import org.landmarkscollector.camera.State.Recording.Pausable
+import org.landmarkscollector.camera.State.Recording.Pausable.PreparingForTheNextRecording
+import org.landmarkscollector.camera.State.Recording.Pausable.RecordingMotion
 import org.landmarkscollector.camera.State.Recording.SavingPreviousMotion
 import org.landmarkscollector.camera.State.Steady.WaitingForDirectoryAndGesture
 import vivid.money.elmslie.core.store.dsl_reducer.ScreenDslReducer
@@ -211,6 +212,36 @@ class Reducer(
                     )
                 }
                 commands { +PrepareForGestureRecording }
+            }
+
+            is Ui.OnResumeRecording -> if (currentState is Pausable) {
+                commands { +Command.ResumeRecording }
+                state {
+                    when (currentState) {
+                        is PreparingForTheNextRecording -> currentState.copy(isPaused = false)
+                        is RecordingMotion -> currentState.copy(isPaused = false)
+                    }
+                }
+            }
+
+            is Ui.OnPauseRecording -> if (currentState is Pausable) {
+                commands { +Command.PauseRecording }
+                state {
+                    when (currentState) {
+                        is PreparingForTheNextRecording -> currentState.copy(isPaused = true)
+                        is RecordingMotion -> currentState.copy(isPaused = true)
+                    }
+                }
+            }
+
+            Ui.OnStopRecording -> if (currentState is Pausable) {
+                commands { +Command.StopRecording }
+                state {
+                    WaitingForDirectoryAndGesture(
+                        directoryUri = currentState.directoryUri,
+                        gestureName = currentState.gestureName
+                    )
+                }
             }
         }
     }

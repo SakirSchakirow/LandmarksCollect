@@ -15,6 +15,7 @@ import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.camera.view.PreviewView
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
@@ -60,6 +61,9 @@ fun CameraScreen(
     onDirectoryChosen: (directory: Uri) -> Unit,
     onGestureNameChanged: (gestureName: String) -> Unit,
     onStartRecordingPressed: () -> Unit,
+    onPauseRecordingPressed: () -> Unit,
+    onResumeRecordingPressed: () -> Unit,
+    onStopRecordingPressed: () -> Unit,
     onHandResults: (results: HandLandmarkerResult) -> Unit,
     onFacePoseResults: (imageProxy: ImageProxy, result: DetectorResult) -> Unit
 ) {
@@ -268,27 +272,46 @@ fun CameraScreen(
                             }
                         }
 
-                        is State.Recording.PreparingForTheNextRecording -> {
-                            val gestureNum = state.gestureNum.dec()
-                            if (gestureNum != UInt.MIN_VALUE) {
-                                Text(
-                                    "Gesture ${state.gestureName} #: $gestureNum is saved",
-                                    fontSize = 20.sp
-                                )
+                        is State.Recording.Pausable -> {
+                            Row {
+                                Button(
+                                    onClick = if (state.isPaused) onResumeRecordingPressed else onPauseRecordingPressed
+                                ) {
+                                    Text(
+                                        text = if (state.isPaused) "▶️Resume" else "⏸️Pause",
+                                        fontSize = 25.sp
+                                    )
+                                }
+                                Button(
+                                    onClick = onStopRecordingPressed
+                                ) {
+                                    Text("⏹️Stop", fontSize = 25.sp)
+                                }
                             }
-                            Text(
-                                "⏱️Recording #${state.gestureNum} will start in: ${state.delayTicks}",
-                                fontSize = 25.sp
-                            )
-                        }
+                            when (state) {
+                                is State.Recording.Pausable.PreparingForTheNextRecording -> {
+                                    val gestureNum = state.gestureNum.dec()
+                                    if (gestureNum != UInt.MIN_VALUE) {
+                                        Text(
+                                            "Gesture ${state.gestureName} #: $gestureNum is saved",
+                                            fontSize = 20.sp
+                                        )
+                                    }
+                                    Text(
+                                        "⏱️Recording #${state.gestureNum} will start in: ${state.delayTicks}",
+                                        fontSize = 25.sp
+                                    )
+                                }
 
-                        is State.Recording.RecordingMotion -> {
-                            Text(
-                                "Gesture ${state.gestureName} #: ${state.gestureNum}",
-                                fontSize = 20.sp
-                            )
-                            Text("\uD83D\uDD34 Live: Recording", fontSize = 23.sp)
-                            Text("Time seconds left: ${state.timeLeft}", fontSize = 25.sp)
+                                is State.Recording.Pausable.RecordingMotion -> {
+                                    Text(
+                                        "Gesture ${state.gestureName} #: ${state.gestureNum}",
+                                        fontSize = 20.sp
+                                    )
+                                    Text("\uD83D\uDD34 Live: Recording", fontSize = 23.sp)
+                                    Text("Time seconds left: ${state.timeLeft}", fontSize = 25.sp)
+                                }
+                            }
                         }
 
                         is State.Recording.SavingPreviousMotion -> {

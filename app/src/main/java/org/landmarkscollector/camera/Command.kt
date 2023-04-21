@@ -8,6 +8,9 @@ sealed class Command {
     object PrepareForGestureRecording : Command()
 
     object StartRecording : Command()
+    object PauseRecording : Command()
+    object ResumeRecording : Command()
+    object StopRecording : Command()
 
     class SaveRecording(
         val uri: Uri,
