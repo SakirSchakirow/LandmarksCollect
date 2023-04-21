@@ -1,7 +1,6 @@
 package org.landmarkscollector.motionRecording
 
 import androidx.camera.core.ImageProxy
-import com.google.mediapipe.tasks.components.containers.NormalizedLandmark
 import com.google.mlkit.vision.facemesh.FaceMeshPoint
 import com.google.mlkit.vision.pose.PoseLandmark
 import org.landmarkscollector.data.CsvRow
@@ -177,17 +176,9 @@ class Reducer(
 
                 val csvRows = currentRecording.csvRows
 
-                val landmarks = event.results.landmarks()
-                val handednesses = event.results.handednesses()
-                landmarks.mapIndexed { index, normalizedLandmarks ->
-                    val handedness = handednesses.getOrNull(index)?.firstOrNull()
-                    requireNotNull(handedness) { "Both info on landmarks and handedness should be available" }
-                    val marks = normalizedLandmarks.getLandmarks(
-                        isRightHand = handedness.categoryName() == "Right"
-                    )
-
+                event.handsResults.onEach { handLandmarks ->
                     csvRows.putAll(
-                        marks.map { mark ->
+                        handLandmarks.map { mark ->
                             mark.toCsvRow(currentRecording.frames)
                         }.associateBy(CsvRow::rowId)
                     )
@@ -277,23 +268,6 @@ class Reducer(
             )
         }
     }
-
-    private fun List<NormalizedLandmark>.getLandmarks(isRightHand: Boolean): List<Landmark> =
-        mapIndexed { index, normalizedLandmark ->
-            normalizedLandmark.toLandmark(
-                index.toUInt(),
-                isRightHand
-            )
-        }
-
-    private fun NormalizedLandmark.toLandmark(index: UInt, isRightHand: Boolean): Landmark =
-        with(this) {
-            if (isRightHand) {
-                Landmark.Hand.Right(index, x(), y(), z())
-            } else {
-                Landmark.Hand.Left(index, x(), y(), z())
-            }
-        }
 
     private fun Landmark.toCsvRow(frame: UInt): CsvRow {
         return CsvRow(

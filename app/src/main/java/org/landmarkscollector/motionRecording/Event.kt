@@ -2,7 +2,7 @@ package org.landmarkscollector.motionRecording
 
 import android.net.Uri
 import androidx.camera.core.ImageProxy
-import com.google.mediapipe.tasks.vision.handlandmarker.HandLandmarkerResult
+import org.landmarkscollector.data.Landmark.Hand
 import org.landmarkscollector.mlkit.detectors.DetectorResult
 
 sealed interface Event {
@@ -19,7 +19,7 @@ sealed interface Event {
         object OnStartRecordingPressed : Ui
 
         class OnHandResults(
-            val results: HandLandmarkerResult
+            val handsResults: List<List<Hand>>
         ) : Ui
 
         class OnFacePoseResults(
