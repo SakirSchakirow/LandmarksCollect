@@ -9,21 +9,21 @@ sealed interface Event {
 
     sealed interface Ui : Event {
         class OnDirectoryChosen(
-            val directory: Uri
+            val directory: Uri,
         ) : Ui
 
         class OnGestureNameChanged(
-            val gestureName: String
+            val gestureName: String,
         ) : Ui
 
         object OnStartRecordingPressed : Ui
 
         class OnHandResults(
-            val handsResults: List<List<Hand>>
+            val handsResults: List<List<Hand>>,
         ) : Ui
 
         class OnFacePoseResults(
-            val imageProxy: ImageProxy, val result: DetectorResult
+            val imageProxy: ImageProxy, val result: DetectorResult,
         ) : Ui
 
         object OnResumeRecording : Ui
@@ -31,12 +31,14 @@ sealed interface Event {
         object OnPauseRecording : Ui
 
         object OnStopRecording : Ui
+
+        object OnToggleCamera : Ui
     }
 
     sealed interface Internal : Event {
 
         class RecordIsSaving(
-            val savingProgress: UInt = UInt.MIN_VALUE
+            val savingProgress: UInt = UInt.MIN_VALUE,
         ) : Internal
 
         class RecordingTimeLeft(val timeLeft: UInt) : Internal

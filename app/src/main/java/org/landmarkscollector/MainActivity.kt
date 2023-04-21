@@ -41,6 +41,7 @@ class MainActivity : ComponentActivity(), ElmRendererDelegate<Effect, State> {
                 ) {
                     CameraScreen(
                         state = state,
+                        onCameraToggle = { store.accept(Event.Ui.OnToggleCamera) },
                         onDirectoryChosen = { store.accept(Event.Ui.OnDirectoryChosen(it)) },
                         onGestureNameChanged = { store.accept(Event.Ui.OnGestureNameChanged(it)) },
                         onStartRecordingPressed = { store.accept(Event.Ui.OnStartRecordingPressed) },

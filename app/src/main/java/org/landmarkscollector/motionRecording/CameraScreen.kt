@@ -13,22 +13,29 @@ import androidx.camera.core.ImageProxy
 import androidx.camera.core.Preview
 import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.camera.view.PreviewView
+import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.content.ContextCompat
@@ -53,6 +60,7 @@ import kotlin.coroutines.suspendCoroutine
 @Composable
 fun CameraScreen(
     state: State,
+    onCameraToggle: (isChecked: Boolean) -> Unit,
     onDirectoryChosen: (directory: Uri) -> Unit,
     onGestureNameChanged: (gestureName: String) -> Unit,
     onStartRecordingPressed: () -> Unit,
@@ -81,13 +89,9 @@ fun CameraScreen(
         GraphicOverlay(context)
     }
 
-    val cameraSelector: MutableState<CameraSelector> = remember {
-        mutableStateOf(CameraSelector.DEFAULT_FRONT_CAMERA)
-    }
-
     if (cameraPermissionState.hasPermission) {
 
-        LaunchedEffect(previewView) {
+        LaunchedEffect(previewView, state.isFrontCamera) {
             lateinit var handLandmarkerHelper: HandLandmarkerHelper
             val backgroundExecutor = Executors.newSingleThreadExecutor()
             backgroundExecutor.execute {
@@ -116,7 +120,7 @@ fun CameraScreen(
                 unbindAll()
                 bindToLifecycle(
                     lifecycleOwner,
-                    cameraSelector.value,
+                    if (state.isFrontCamera) CameraSelector.DEFAULT_FRONT_CAMERA else CameraSelector.DEFAULT_BACK_CAMERA,
                     Preview.Builder()
                         .setTargetAspectRatio(AspectRatio.RATIO_4_3)
                         .setTargetRotation(previewView.display.rotation)
@@ -133,11 +137,10 @@ fun CameraScreen(
                             setAnalyzer(backgroundExecutor) { imageProxy ->
                                 handLandmarkerHelper.detectLiveStream(
                                     imageProxy = imageProxy,
-                                    isFrontCamera = cameraSelector.value == CameraSelector.DEFAULT_FRONT_CAMERA
+                                    isFrontCamera = state.isFrontCamera
                                 )
                                 if (needUpdateGraphicOverlayImageSourceInfo) {
-                                    val isImageFlipped =
-                                        true//TODOlensFacing == CameraSelector.LENS_FACING_FRONT
+                                    val isImageFlipped = state.isFrontCamera
                                     val rotationDegrees = imageProxy.imageInfo.rotationDegrees
                                     if (rotationDegrees == 0 || rotationDegrees == 180) {
                                         graphicOverlay.setImageSourceInfo(
@@ -186,6 +189,7 @@ fun CameraScreen(
     ) {
         StateContent(
             state,
+            onCameraToggle,
             onDirectoryChosen,
             onGestureNameChanged,
             onStartRecordingPressed,
@@ -202,6 +206,7 @@ fun CameraScreen(
 @Composable
 fun StateContent(
     state: State,
+    onCameraToggle: (isChecked: Boolean) -> Unit,
     onDirectoryChosen: (directory: Uri) -> Unit,
     onGestureNameChanged: (gestureName: String) -> Unit,
     onStartRecordingPressed: () -> Unit,
@@ -232,6 +237,7 @@ fun StateContent(
                 when (state) {
                     is Steady -> Steady(
                         state,
+                        onCameraToggle,
                         onDirectoryChosen,
                         onGestureNameChanged,
                         onStartRecordingPressed
@@ -254,56 +260,69 @@ fun StateContent(
 @Composable
 fun Steady(
     state: Steady,
+    onCameraToggle: (isChecked: Boolean) -> Unit,
     onDirectoryChosen: (directory: Uri) -> Unit,
     onGestureNameChanged: (gestureName: String) -> Unit,
     onStartRecordingPressed: () -> Unit,
 ) {
-    var gestureName by remember { mutableStateOf("") }
-    val pickPathLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.OpenDocumentTree(),
-        onResult = { uri ->
-            if (uri != null) {
-                onDirectoryChosen(uri)
+    Column(horizontalAlignment = Alignment.End) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Text("${if (state.isFrontCamera) "Front 🤳" else "Back 📸"} camera", fontSize = 20.sp)
+            Spacer(modifier = Modifier.size(12.dp))
+            Switch(checked = state.isFrontCamera, onCheckedChange = onCameraToggle)
+        }
+        var gestureName by remember { mutableStateOf("") }
+        val pickPathLauncher = rememberLauncherForActivityResult(
+            contract = ActivityResultContracts.OpenDocumentTree(),
+            onResult = { uri ->
+                if (uri != null) {
+                    onDirectoryChosen(uri)
+                }
             }
+        )
+        Spacer(modifier = Modifier.size(12.dp))
+        Button(onClick = {
+            pickPathLauncher.launch(null)
+        }) {
+            val action = if (state is ReadyToStartRecording)
+                "Change"
+            else
+                "Choose"
+            Text("$action directory to save CSVs", fontSize = 25.sp)
         }
-    )
-    Button(onClick = {
-        pickPathLauncher.launch(null)
-    }) {
-        val action = if (state is ReadyToStartRecording)
-            "Change"
-        else
-            "Choose"
-        Text("$action directory to save CSVs", fontSize = 25.sp)
-    }
-    val focusManager = LocalFocusManager.current
-    OutlinedTextField(
-        value = gestureName,
-        maxLines = 1,
-        onValueChange = { text ->
-            gestureName = text
-            onGestureNameChanged(text)
-        },
-        label = { Text("Gesture Name (.csv file name)") },
-        keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
-        keyboardActions = KeyboardActions(
-            onDone = { focusManager.clearFocus() }
+        Spacer(modifier = Modifier.size(12.dp))
+        val focusManager = LocalFocusManager.current
+        OutlinedTextField(
+            value = gestureName,
+            maxLines = 1,
+            onValueChange = { text ->
+                gestureName = text
+                onGestureNameChanged(text)
+            },
+            label = { Text("Gesture Name (.csv file name)") },
+            keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
+            keyboardActions = KeyboardActions(
+                onDone = { focusManager.clearFocus() }
+            )
         )
-    )
-    if (state is ReadyToStartRecording) {
-        Button(
-            onClick = onStartRecordingPressed
-        ) {
-            Text("Start Recording", fontSize = 25.sp)
+        Spacer(modifier = Modifier.size(12.dp))
+        if (state is ReadyToStartRecording) {
+            Button(
+                onClick = onStartRecordingPressed
+            ) {
+                Text("Start Recording", fontSize = 25.sp)
+            }
+            Spacer(modifier = Modifier.size(12.dp))
+            Text(
+                "Gesture-directory path: ${state.directoryUri.path}",
+                fontSize = 16.sp
+            )
+            Spacer(modifier = Modifier.size(12.dp))
+            Text(
+                "Gesture will be recorded in files: ${state.gestureName}_N.csv",
+                fontSize = 16.sp
+            )
         }
-        Text(
-            "Gesture-directory path: ${state.directoryUri.path}",
-            fontSize = 16.sp
-        )
-        Text(
-            "Gesture will be recorded in files: ${state.gestureName}_N.csv",
-            fontSize = 16.sp
-        )
     }
 }
 
