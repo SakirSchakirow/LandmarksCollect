@@ -40,7 +40,7 @@ sealed interface State {
         data class RecordingMotion(
             override val directoryUri: Uri,
             override val gestureName: String,
-            override val gestureNum: UInt = UInt.MIN_VALUE,
+            override val gestureNum: UInt = 1u,
             val timeLeft: UInt = MAX_FRAMES_SECS,
             val hands: LandmarksRecording = LandmarksRecording(),
             val facePose: LandmarksRecording = LandmarksRecording()
