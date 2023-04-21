@@ -8,11 +8,11 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.ui.Modifier
-import org.landmarkscollector.elm.Effect
-import org.landmarkscollector.elm.ElmCameraScreen
-import org.landmarkscollector.elm.Event
-import org.landmarkscollector.elm.State
-import org.landmarkscollector.elm.storeFactory
+import org.landmarkscollector.camera.Effect
+import org.landmarkscollector.camera.CameraScreen
+import org.landmarkscollector.camera.Event
+import org.landmarkscollector.camera.State
+import org.landmarkscollector.camera.storeFactory
 import org.landmarkscollector.ui.theme.LandmarksCollectorTheme
 import vivid.money.elmslie.android.renderer.ElmRenderer
 import vivid.money.elmslie.android.renderer.ElmRendererDelegate
@@ -39,7 +39,7 @@ class MainActivity : ComponentActivity(), ElmRendererDelegate<Effect, State> {
                     modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colorScheme.background
                 ) {
-                    ElmCameraScreen(
+                    CameraScreen(
                         state = state,
                         onDirectoryChosen = { store.accept(Event.Ui.OnDirectoryChosen(it)) },
                         onGestureNameChanged = { store.accept(Event.Ui.OnGestureNameChanged(it)) },

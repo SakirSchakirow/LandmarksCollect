@@ -1,4 +1,4 @@
-package org.landmarkscollector.elm
+package org.landmarkscollector.camera
 
 import android.net.Uri
 import org.landmarkscollector.data.LandmarksRecording

@@ -1,4 +1,4 @@
-package org.landmarkscollector.elm
+package org.landmarkscollector.camera
 
 import android.Manifest
 import android.net.Uri
@@ -37,8 +37,8 @@ import com.google.accompanist.permissions.rememberPermissionState
 import com.google.mediapipe.tasks.vision.core.RunningMode
 import com.google.mediapipe.tasks.vision.handlandmarker.HandLandmarkerResult
 import com.google.mlkit.common.MlKitException
-import org.landmarkscollector.elm.State.Steady
-import org.landmarkscollector.elm.State.Steady.ReadyToStartRecording
+import org.landmarkscollector.camera.State.Steady
+import org.landmarkscollector.camera.State.Steady.ReadyToStartRecording
 import org.landmarkscollector.hands.HandLandmarkerHelper
 import org.landmarkscollector.hands.LandmarkerListener
 import org.landmarkscollector.hands.OverlayView
@@ -55,7 +55,7 @@ import kotlin.coroutines.suspendCoroutine
 )
 @androidx.annotation.OptIn(ExperimentalGetImage::class)
 @Composable
-fun ElmCameraScreen(
+fun CameraScreen(
     state: State,
     onDirectoryChosen: (directory: Uri) -> Unit,
     onGestureNameChanged: (gestureName: String) -> Unit,
