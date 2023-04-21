@@ -5,6 +5,8 @@ import org.landmarkscollector.data.LandmarksRecording
 
 sealed class Command {
 
+    object PrepareForGestureRecording : Command()
+
     object StartRecording : Command()
 
     class SaveRecording(

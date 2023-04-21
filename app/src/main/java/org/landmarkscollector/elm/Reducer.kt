@@ -7,6 +7,7 @@ import com.google.mlkit.vision.pose.PoseLandmark
 import org.landmarkscollector.data.CsvRow
 import org.landmarkscollector.data.Landmark
 import org.landmarkscollector.domain.repository.FileCreator
+import org.landmarkscollector.elm.Command.PrepareForGestureRecording
 import org.landmarkscollector.elm.Command.SaveRecording
 import org.landmarkscollector.elm.Command.StartRecording
 import org.landmarkscollector.elm.Event.Ui
@@ -202,13 +203,14 @@ class Reducer(
             }
 
             is Ui.OnStartRecordingPressed -> if (currentState is State.Steady.ReadyToStartRecording) {
-                commands { +StartRecording }
                 state {
-                    RecordingMotion(
+                    PreparingForTheNextRecording(
                         directoryUri = currentState.directoryUri,
-                        gestureName = currentState.gestureName
+                        gestureName = currentState.gestureName,
+                        gestureNum = 1u
                     )
                 }
+                commands { +PrepareForGestureRecording }
             }
         }
     }

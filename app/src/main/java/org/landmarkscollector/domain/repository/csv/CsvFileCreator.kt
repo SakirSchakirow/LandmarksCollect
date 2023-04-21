@@ -13,7 +13,7 @@ class CsvFileCreator(val context: Context) : FileCreator {
         return DocumentFile.fromTreeUri(context, directoryUri)!!
             .createFile(
                 CSV_MIME_TYPE,
-                "${gestureName}_$gestureNum}"
+                "${gestureName}_$gestureNum"
             )!!.uri
     }
 }
