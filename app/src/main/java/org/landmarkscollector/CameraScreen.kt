@@ -257,7 +257,7 @@ fun CameraScreen(
                     val pickPathLauncher = rememberLauncherForActivityResult(
                         contract = ActivityResultContracts.OpenDocumentTree(),
                         onResult = { uri ->
-                            uri?.let(viewModel::setCsvsDirectory)
+                            uri?.let(viewModel::setCurrentDirectory)
                         }
                     )
                     Button(onClick = {
