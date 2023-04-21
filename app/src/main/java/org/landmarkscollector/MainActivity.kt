@@ -1,8 +1,9 @@
 package org.landmarkscollector
 
-import android.os.Bundle
+import  android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.activity.viewModels
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
@@ -12,6 +13,7 @@ import org.landmarkscollector.ui.theme.LandmarksCollectorTheme
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        val cameraScreenViewModel: CameraScreenViewModel by viewModels()
         setContent {
             LandmarksCollectorTheme {
                 // A surface container using the 'background' color from the theme
@@ -19,7 +21,7 @@ class MainActivity : ComponentActivity() {
                     modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colorScheme.background
                 ) {
-                    CameraScreen()
+                    CameraScreen(cameraScreenViewModel)
                 }
             }
         }

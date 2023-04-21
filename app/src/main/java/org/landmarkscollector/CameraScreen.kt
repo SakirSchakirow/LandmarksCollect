@@ -11,12 +11,20 @@ import androidx.camera.view.PreviewView
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.Button
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.*
+import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalLifecycleOwner
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.content.ContextCompat
@@ -40,9 +48,14 @@ import kotlin.time.Duration.Companion.seconds
 
 const val FRAMES_SECS = 10
 
-@OptIn(ExperimentalPermissionsApi::class)
+@OptIn(
+    ExperimentalPermissionsApi::class, ExperimentalMaterial3Api::class,
+    ExperimentalComposeUiApi::class
+)
 @Composable
-fun CameraScreen() {
+fun CameraScreen(
+    viewModel: CameraScreenViewModel
+) {
     val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
 
@@ -159,7 +172,6 @@ fun CameraScreen() {
                                         "Failed to process image. Error: " + e.localizedMessage
                                     )
                                 }
-
                             }
                         }
                 )
@@ -207,6 +219,20 @@ fun CameraScreen() {
                     }) {
                         Text("Start Timer", fontSize = 25.sp)
                     }
+                    val gestureName by viewModel.currentGesture.collectAsState()
+                    val focusManager = LocalFocusManager.current
+                    OutlinedTextField(
+                        value = gestureName ?: "",
+                        maxLines = 1,
+                        onValueChange = { text ->
+                            viewModel.setGestureName(text)
+                        },
+                        label = { Text("Gesture Name (.csv file name)") },
+                        keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
+                        keyboardActions = KeyboardActions(
+                            onDone = { focusManager.clearFocus() }
+                        )
+                    )
                 }
             }
         }
