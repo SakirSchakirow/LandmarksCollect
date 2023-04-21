@@ -55,7 +55,7 @@ sealed class Landmark {
         override val type = LandmarkType.Pose
     }
 
-    enum class LandmarkType(val typeName: String, val totalLandmarkNumber: Int) {
+    enum class LandmarkType(val label: String, val totalLandmarkNumber: Int) {
         Face("face", 468),
         RightHand("right_hand", 21),
         LeftHand("left_hand", 21),
