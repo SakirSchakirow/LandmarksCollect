@@ -2,6 +2,8 @@ package org.landmarkscollector
 
 import android.Manifest
 import android.util.Log
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.camera.core.AspectRatio
 import androidx.camera.core.CameraSelector
 import androidx.camera.core.ExperimentalGetImage
@@ -19,12 +21,10 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.*
-import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalLifecycleOwner
-import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
@@ -62,7 +62,6 @@ fun CameraScreen(
     val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
 
-    // Camera permission state
     val cameraPermissionState = rememberPermissionState(
         Manifest.permission.CAMERA
     )
@@ -173,7 +172,7 @@ fun CameraScreen(
                                             imageProxy,
                                             graphicOverlay
                                         ) { detectorResult ->
-                                            viewModel.onFacePoseResults(detectorResult)
+                                            viewModel.onFacePoseResults(imageProxy, detectorResult)
                                         }
                                 } catch (e: MlKitException) {
                                     Log.e(
@@ -247,14 +246,27 @@ fun CameraScreen(
                                         delay(1.seconds)
                                         timerTicks--
                                     }
-                                    viewModel.setGesturesNum(gesturesNum + 1)
+                                    viewModel.setGesturesNum(context, gesturesNum + 1)
                                 }
                                 viewModel.setIsRecordingOn(false)
                             }
                         }) {
                         Text("Start Recording", fontSize = 25.sp)
                     }
-                    val gestureName by viewModel.currentGesture.collectAsState()
+
+                    val pickPathLauncher = rememberLauncherForActivityResult(
+                        contract = ActivityResultContracts.OpenDocumentTree(),
+                        onResult = { uri ->
+                            uri?.let(viewModel::setCsvsDirectory)
+                        }
+                    )
+                    Button(onClick = {
+                        pickPathLauncher.launch(null)
+                    }) {
+                        Text("Choose directory to save CSVs", fontSize = 25.sp)
+                    }
+
+                    val gestureName by viewModel.currentGestureName.collectAsState()
                     val focusManager = LocalFocusManager.current
                     OutlinedTextField(
                         value = gestureName ?: "",

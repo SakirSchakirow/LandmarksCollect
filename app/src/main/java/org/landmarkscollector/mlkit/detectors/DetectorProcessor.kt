@@ -37,8 +37,6 @@ class DetectorProcessor(context: Context) : VisionProcessorBase<DetectorResult>(
     private val classificationExecutor = Executors.newSingleThreadExecutor()
 
     override fun detectInImage(image: InputImage): Task<DetectorResult> {
-        Log.d("DetectorProcessor", "Vision Image Width:${image.width}")
-        Log.d("DetectorProcessor", "Vision Image Height:${image.height}")
         return faceMeshDetector.process(image)
             .continueWithTask { facesTask ->
                 poseDetector.process(image)
