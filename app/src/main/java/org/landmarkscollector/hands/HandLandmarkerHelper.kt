@@ -103,7 +103,6 @@ class HandLandmarkerHelper(
                 Bitmap.Config.ARGB_8888
             )
         imageProxy.use { bitmapBuffer.copyPixelsFromBuffer(imageProxy.planes[0].buffer) }
-        imageProxy.close()
 
         val matrix = Matrix().apply {
             // Rotate the frame received from the camera to be in the same direction as it'll be shown
