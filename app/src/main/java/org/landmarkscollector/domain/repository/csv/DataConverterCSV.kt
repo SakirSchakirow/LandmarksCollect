@@ -1,6 +1,5 @@
 package org.landmarkscollector.domain.repository.csv
 
-import com.opencsv.CSVWriter
 import com.opencsv.CSVWriterBuilder
 import com.opencsv.ICSVWriter
 import kotlinx.coroutines.flow.Flow
@@ -16,10 +15,6 @@ class DataConverterCSV : DataConverter {
 
     private fun getCsvWriter(writer: Writer): ICSVWriter {
         return CSVWriterBuilder(writer)
-            .withSeparator(SEPARATOR)
-            .withQuoteChar(CSVWriter.NO_QUOTE_CHARACTER)
-            .withEscapeChar(CSVWriter.DEFAULT_ESCAPE_CHARACTER)
-            .withLineEnd(CSVWriter.DEFAULT_LINE_END)
             .build()
     }
 
@@ -71,7 +66,6 @@ class DataConverterCSV : DataConverter {
     }
 
     companion object {
-        const val SEPARATOR = ';'
         val HEADER_DATA = arrayOf("frame", "landmark_index", "row_id", "type", "x", "y", "z")
     }
 }
