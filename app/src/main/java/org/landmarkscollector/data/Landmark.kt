@@ -2,13 +2,13 @@ package org.landmarkscollector.data
 
 sealed class Landmark {
     abstract val landmarkType: String
-    abstract val landmarkNumber: Int
+    abstract val landmarkIndex: Int
     abstract val x: Float
     abstract val y: Float
     abstract val z: Float
 
     sealed class Hand(
-        override val landmarkNumber: Int,
+        override val landmarkIndex: Int,
         override val x: Float,
         override val y: Float,
         override val z: Float,
@@ -18,22 +18,22 @@ sealed class Landmark {
         override val landmarkType: String = "${handedness}_hand"
 
         class Left(
-            override val landmarkNumber: Int,
+            override val landmarkIndex: Int,
             override val x: Float,
             override val y: Float,
             override val z: Float
-        ) : Hand(landmarkNumber, x, y, z, "left")
+        ) : Hand(landmarkIndex, x, y, z, "left")
 
         class Right(
-            override val landmarkNumber: Int,
+            override val landmarkIndex: Int,
             override val x: Float,
             override val y: Float,
             override val z: Float
-        ) : Hand(landmarkNumber, x, y, z, "right")
+        ) : Hand(landmarkIndex, x, y, z, "right")
     }
 
     class Face(
-        override val landmarkNumber: Int,
+        override val landmarkIndex: Int,
         override val x: Float,
         override val y: Float,
         override val z: Float
@@ -43,7 +43,7 @@ sealed class Landmark {
     }
 
     class Pose(
-        override val landmarkNumber: Int,
+        override val landmarkIndex: Int,
         override val x: Float,
         override val y: Float,
         override val z: Float
