@@ -103,18 +103,6 @@ class OverlayView(context: Context?) :
         invalidate()
     }
 
-    fun setResults(
-        handLandmarks: List<List<Hand>>,
-    ) {
-        results = handLandmarks
-
-        imageWidth = width
-        imageHeight = height
-        scaleFactor = 1f
-
-        invalidate()
-    }
-
     companion object {
         private const val LANDMARK_STROKE_WIDTH = 8F
 

@@ -18,6 +18,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
+import com.google.mediapipe.tasks.vision.core.RunningMode
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import org.landmarkscollector.data.Frame
@@ -73,7 +74,7 @@ fun MotionDisplay() {
 
                     delay(100)
                     with(overlayView) {
-                        setResults(handLandmarks = hands)
+                        setResults(handLandmarks = hands, 640, 480, RunningMode.LIVE_STREAM)
                         invalidate()
                     }
                     with(graphicOverlay) {
