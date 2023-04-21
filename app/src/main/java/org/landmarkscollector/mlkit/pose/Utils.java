@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.landmarkscollector.mlkit.posedetector.classification;
+package org.landmarkscollector.mlkit.pose;
 
 import static com.google.common.primitives.Floats.max;
 
