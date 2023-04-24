@@ -19,6 +19,8 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
 import com.google.mediapipe.tasks.vision.core.RunningMode
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
@@ -50,8 +52,11 @@ fun MotionDisplay() {
 
     var frames: List<Frame> by remember { mutableStateOf(emptyList()) }
 
+    var previousMotionAnimation: Job? = null
+
     LaunchedEffect(frames) {
-        launch {
+        previousMotionAnimation?.cancelAndJoin()
+        previousMotionAnimation = launch {
             if (isActive) {
                 repeat(100) {
                     for (frameIndex in frames.indices) {
