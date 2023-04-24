@@ -20,6 +20,7 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
 import com.google.mediapipe.tasks.vision.core.RunningMode
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import org.landmarkscollector.data.Frame
 import org.landmarkscollector.data.Landmark
@@ -51,53 +52,55 @@ fun MotionDisplay() {
 
     LaunchedEffect(frames) {
         launch {
-            repeat(100) {
-                for (frameIndex in frames.indices) {
-                    val hands = buildList {
-                        with(frames[frameIndex].landmarks) {
-                            filterIsInstance(Landmark.Hand.Right::class.java)
-                                .takeIf { it.isNotEmpty() }
-                                ?.let { add(it) }
-                            filterIsInstance(Landmark.Hand.Left::class.java)
-                                .takeIf { it.isNotEmpty() }
-                                ?.let { add(it) }
+            if (isActive) {
+                repeat(100) {
+                    for (frameIndex in frames.indices) {
+                        val hands = buildList {
+                            with(frames[frameIndex].landmarks) {
+                                filterIsInstance(Landmark.Hand.Right::class.java)
+                                    .takeIf { it.isNotEmpty() }
+                                    ?.let { add(it) }
+                                filterIsInstance(Landmark.Hand.Left::class.java)
+                                    .takeIf { it.isNotEmpty() }
+                                    ?.let { add(it) }
+                            }
                         }
-                    }
 
-                    val poseLandmarks = frames[frameIndex].landmarks
-                        .filterIsInstance(Landmark.Pose::class.java)
-                        .takeIf { it.isNotEmpty() }
+                        val poseLandmarks = frames[frameIndex].landmarks
+                            .filterIsInstance(Landmark.Pose::class.java)
+                            .takeIf { it.isNotEmpty() }
 
-                    val faceLandmarks = frames[frameIndex].landmarks
-                        .filterIsInstance(Landmark.Face::class.java)
-                        .takeIf { it.isNotEmpty() }
+                        val faceLandmarks = frames[frameIndex].landmarks
+                            .filterIsInstance(Landmark.Face::class.java)
+                            .takeIf { it.isNotEmpty() }
 
-                    delay(100)
-                    with(overlayView) {
-                        setResults(handLandmarks = hands, 640, 480, RunningMode.LIVE_STREAM)
-                        invalidate()
-                    }
-                    with(graphicOverlay) {
-                        clear()
-                        poseLandmarks?.let {
-                            add(
-                                PoseGraphic(
-                                    overlay = this,
-                                    poseLandmarks = poseLandmarks,
-                                    640,
-                                    480,
-                                )
-                            )
+                        delay(100)
+                        with(overlayView) {
+                            setResults(handLandmarks = hands, 640, 480, RunningMode.LIVE_STREAM)
+                            invalidate()
                         }
-                        faceLandmarks?.let {
-                            add(
-                                FaceMeshGraphic(
-                                    overlay = this,
-                                    points = faceLandmarks,
-                                    640,
-                                    480,
+                        with(graphicOverlay) {
+                            clear()
+                            poseLandmarks?.let {
+                                add(
+                                    PoseGraphic(
+                                        overlay = this,
+                                        poseLandmarks = poseLandmarks,
+                                        640,
+                                        480,
+                                    )
                                 )
-                            )
+                            }
+                            faceLandmarks?.let {
+                                add(
+                                    FaceMeshGraphic(
+                                        overlay = this,
+                                        points = faceLandmarks,
+                                        640,
+                                        480,
+                                    )
+                                )
+                            }
                         }
                     }
                 }
