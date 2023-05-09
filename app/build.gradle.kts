@@ -42,7 +42,7 @@ android {
     composeOptions {
         kotlinCompilerExtensionVersion = "1.4.3"
     }
-    packagingOptions {
+    packaging {
         resources {
             excludes += "/META-INF/{AL2.0,LGPL2.1}"
         }
@@ -54,7 +54,7 @@ dependencies {
     implementation("androidx.core:core-ktx:1.10.0")
     implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.6.1")
     implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.6.1")
-    implementation("androidx.activity:activity-compose:1.7.0")
+    implementation("androidx.activity:activity-compose:1.7.1")
     implementation(platform("androidx.compose:compose-bom:2022.10.00"))
     implementation("androidx.compose.ui:ui")
     implementation("androidx.compose.ui:ui-graphics")
@@ -62,12 +62,11 @@ dependencies {
     implementation("androidx.compose.material3:material3")
 
     // CameraX
-    val cameraxVersion = "1.3.0-alpha05"
+    val cameraxVersion = "1.3.0-alpha06"
     implementation("androidx.camera:camera-lifecycle:$cameraxVersion")
     implementation("androidx.camera:camera-video:$cameraxVersion")
     implementation("androidx.camera:camera-view:$cameraxVersion")
     implementation("androidx.camera:camera-extensions:$cameraxVersion")
-
 
     // MediaPipe Library
     implementation("com.google.mediapipe:tasks-vision:0.1.0-alpha-5")
@@ -87,7 +86,6 @@ dependencies {
     // Elmslie Mvi
     implementation("com.github.vivid-money.elmslie:elmslie-core:3.0.0-alpha06")
     implementation("com.github.vivid-money.elmslie:elmslie-android:3.0.0-alpha06")
-//    implementation("com.github.vivid-money.elmslie:elmslie-compose:3.0.0-alpha06")
 
     testImplementation("junit:junit:4.13.2")
     androidTestImplementation("androidx.test.ext:junit:1.1.5")
