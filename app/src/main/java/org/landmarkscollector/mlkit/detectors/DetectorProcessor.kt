@@ -45,7 +45,7 @@ class DetectorProcessor(context: Context) : VisionProcessorBase<DetectorResult>(
                         DetectorResult(
                             imageWidth = image.width,
                             imageHeight = image.height,
-                            faceMeshes = facesTask.result.first(),
+                            faceMeshes = facesTask.result.firstOrNull(),
                             poseLandmarks = poseTask.result.allPoseLandmarks
                         )
                     }

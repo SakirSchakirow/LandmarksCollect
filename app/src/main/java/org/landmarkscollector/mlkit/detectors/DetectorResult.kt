@@ -15,12 +15,12 @@ data class DetectorResult(
     constructor(
         imageWidth: Int,
         imageHeight: Int,
-        faceMeshes: FaceMesh,
+        faceMeshes: FaceMesh?,
         poseLandmarks: List<PoseLandmark>,
     ) : this(
         imageWidth,
         imageHeight,
-        faceMeshes.toLandmarks(imageWidth, imageHeight),
+        faceMeshes?.toLandmarks(imageWidth, imageHeight)?: emptyList(),
         poseLandmarks.toLandmark(imageWidth, imageHeight)
     )
 
