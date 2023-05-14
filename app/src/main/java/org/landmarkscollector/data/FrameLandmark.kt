@@ -2,7 +2,7 @@ package org.landmarkscollector.data
 
 import org.landmarkscollector.data.Landmark.LandmarkType
 
-data class CsvRow(
+data class FrameLandmark(
     val frame: UInt,
     val landmarkIndex: UInt,
     val rowId: String,
@@ -31,7 +31,7 @@ data class CsvRow(
             frameNumber: UInt,
             landmarkIndex: UInt,
             landmarkType: LandmarkType
-        ) = CsvRow(
+        ) = FrameLandmark(
             frame = frameNumber,
             landmarkIndex = landmarkIndex,
             rowId = landmarkType.rowId(frameNumber, landmarkIndex),

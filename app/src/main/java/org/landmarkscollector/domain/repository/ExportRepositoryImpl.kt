@@ -5,7 +5,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
-import org.landmarkscollector.data.CsvRow
+import org.landmarkscollector.data.FrameLandmark
 import org.landmarkscollector.data.Resource
 import org.landmarkscollector.domain.model.PathInfo
 import org.landmarkscollector.domain.repository.file.FileWriter
@@ -15,7 +15,7 @@ class ExportRepositoryImpl(
     private val dataConverter: DataConverter
 ) : ExportRepository {
     override fun startExportData(
-        exportList: List<CsvRow>,
+        exportList: List<FrameLandmark>,
         futureCsvFile: Uri
     ): Flow<Resource<PathInfo>> =
         dataConverter.convertSensorData(exportList).map { generateInfo ->

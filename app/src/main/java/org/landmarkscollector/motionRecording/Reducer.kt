@@ -1,7 +1,8 @@
 package org.landmarkscollector.motionRecording
 
-import org.landmarkscollector.data.CsvRow
+import org.landmarkscollector.data.FrameLandmark
 import org.landmarkscollector.data.Landmark
+import org.landmarkscollector.data.RowId
 import org.landmarkscollector.domain.repository.FileCreator
 import org.landmarkscollector.motionRecording.CamerasInfo.CamerasAvailable.AllTypes
 import org.landmarkscollector.motionRecording.Command.PrepareForGestureRecording
@@ -9,6 +10,7 @@ import org.landmarkscollector.motionRecording.Command.SaveRecording
 import org.landmarkscollector.motionRecording.Command.StartRecording
 import org.landmarkscollector.motionRecording.Event.Ui
 import org.landmarkscollector.motionRecording.Event.Internal
+import org.landmarkscollector.motionRecording.Event.Internal.GesturesRate
 import org.landmarkscollector.motionRecording.Event.Internal.RecordIsSaving
 import org.landmarkscollector.motionRecording.Event.Internal.RecordingSaved
 import org.landmarkscollector.motionRecording.Event.Internal.RecordingTimeLeft
@@ -21,6 +23,7 @@ import org.landmarkscollector.motionRecording.State.LiveCamera.Recording.Pausabl
 import org.landmarkscollector.motionRecording.State.LiveCamera.Recording.Pausable.RecordingMotion
 import org.landmarkscollector.motionRecording.State.LiveCamera.Recording.SavingPreviousMotion
 import org.landmarkscollector.motionRecording.State.LiveCamera.Steady.*
+import org.landmarkscollector.motionRecording.State.LiveCamera.Steady.WaitingForDirectoryAndGesture.Companion.DETECTION_FRAME_BUFFER_SIZE
 import vivid.money.elmslie.core.store.dsl_reducer.ScreenDslReducer
 
 internal class Reducer(
@@ -116,6 +119,10 @@ internal class Reducer(
                     commands { +StartRecording }
                 }
             }
+
+            is GesturesRate -> if (currentState is WaitingForDirectoryAndGesture) {
+                state { currentState.copy(gestureRates = event.rates) }
+            }
         }
     }
 
@@ -139,29 +146,67 @@ internal class Reducer(
                 }
             }
 
-            is Ui.OnFacePoseResults -> if (currentState is RecordingMotion) {
+            is Ui.OnFacePoseResults -> when {
+                currentState is RecordingMotion -> {
+                    val currentRecording = currentState.facePose
 
-                val currentRecording = currentState.facePose
+                    val csvRows = currentRecording.rows
 
-                val csvRows = currentRecording.csvRows
-
-                csvRows.putAll(
-                    event.result.poseLandmarks.map { landmark ->
-                        landmark.toCsvRow(currentRecording.frames)
-                    }.associateBy(CsvRow::rowId)
-                )
-                event.result.faceLandmarks.map { landmark ->
-                    landmark.toCsvRow(currentRecording.frames)
-                }.associateBy(CsvRow::rowId)
-                    .let(csvRows::putAll)
-
-                state {
-                    currentState.copy(
-                        facePose = currentRecording.copy(
-                            frames = currentRecording.frames.inc(),
-                            csvRows = csvRows
-                        )
+                    csvRows.putAll(
+                        event.result.poseLandmarks.map { landmark ->
+                            landmark.toFrameLandmark(currentRecording.frames)
+                        }.associateBy(FrameLandmark::rowId)
                     )
+                    event.result.faceLandmarks.map { landmark ->
+                        landmark.toFrameLandmark(currentRecording.frames)
+                    }.associateBy(FrameLandmark::rowId)
+                        .let(csvRows::putAll)
+
+                    state {
+                        currentState.copy(
+                            facePose = currentRecording.copy(
+                                frames = currentRecording.frames.inc(),
+                                rows = csvRows
+                            )
+                        )
+                    }
+                }
+
+                currentState is WaitingForDirectoryAndGesture -> {
+                    val frame: UInt = currentState.facePoseFramesQueue.size
+                        .takeIf { size -> size < DETECTION_FRAME_BUFFER_SIZE.toInt() }
+                        ?.toUInt()
+                        ?: 0u
+
+                    state {
+                        currentState.copy(
+                            facePoseFramesQueue = currentState.facePoseFramesQueue.apply {
+                                add(
+                                    mutableMapOf<RowId, FrameLandmark>().apply {
+                                        with(event.result) {
+                                            (poseLandmarks + faceLandmarks).asSequence()
+                                                .map { mark -> mark.toFrameLandmark(frame) }
+                                                .onEach { mark -> put(mark.rowId, mark) }
+                                        }
+                                    }
+                                )
+                            }
+                        )
+                    }
+
+                    commands {
+                        with(currentState) {
+                            if (handsFramesQueue.size == DETECTION_FRAME_BUFFER_SIZE.toInt()
+                                && facePoseFramesQueue.size == DETECTION_FRAME_BUFFER_SIZE.toInt()
+                            ) {
+                                +Command.CheckGesture(
+                                    DETECTION_FRAME_BUFFER_SIZE,
+                                    handsFramesQueue.toList(),
+                                    facePoseFramesQueue.toList()
+                                )
+                            }
+                        }
+                    }
                 }
             }
 
@@ -182,26 +227,65 @@ internal class Reducer(
                 }
             }
 
-            is Ui.OnHandResults -> if (currentState is RecordingMotion) {
-                val currentRecording = currentState.hands
+            is Ui.OnHandResults -> when {
+                currentState is RecordingMotion -> {
+                    val currentRecording = currentState.hands
 
-                val csvRows = currentRecording.csvRows
+                    val rows = currentRecording.rows
 
-                event.handsResults.onEach { handLandmarks ->
-                    csvRows.putAll(
-                        handLandmarks.map { mark ->
-                            mark.toCsvRow(currentRecording.frames)
-                        }.associateBy(CsvRow::rowId)
-                    )
+                    event.handsResults.onEach { handLandmarks ->
+                        rows.putAll(
+                            handLandmarks.map { mark ->
+                                mark.toFrameLandmark(currentRecording.frames)
+                            }.associateBy(FrameLandmark::rowId)
+                        )
+                    }
+
+                    state {
+                        currentState.copy(
+                            hands = currentRecording.copy(
+                                frames = currentRecording.frames.inc(),
+                                rows = rows
+                            )
+                        )
+                    }
                 }
 
-                state {
-                    currentState.copy(
-                        hands = currentRecording.copy(
-                            frames = currentRecording.frames.inc(),
-                            csvRows = csvRows
+                currentState is WaitingForDirectoryAndGesture -> {
+                    val frame: UInt = currentState.handsFramesQueue.size
+                        .takeIf { size -> size < DETECTION_FRAME_BUFFER_SIZE.toInt() }
+                        ?.toUInt()
+                        ?: 0u
+
+                    state {
+                        currentState.copy(
+                            facePoseFramesQueue = currentState.handsFramesQueue.apply {
+                                add(
+                                    mutableMapOf<RowId, FrameLandmark>().apply {
+                                        event.handsResults
+                                            .asSequence()
+                                            .flatten()
+                                            .map { mark -> mark.toFrameLandmark(frame) }
+                                            .onEach { mark -> put(mark.rowId, mark) }
+                                    }
+                                )
+                            }
                         )
-                    )
+                    }
+
+                    commands {
+                        with(currentState) {
+                            if (handsFramesQueue.size == DETECTION_FRAME_BUFFER_SIZE.toInt()
+                                && facePoseFramesQueue.size == DETECTION_FRAME_BUFFER_SIZE.toInt()
+                            ) {
+                                +Command.CheckGesture(
+                                    DETECTION_FRAME_BUFFER_SIZE,
+                                    handsFramesQueue.toList(),
+                                    facePoseFramesQueue.toList()
+                                )
+                            }
+                        }
+                    }
                 }
             }
 
@@ -292,8 +376,8 @@ internal class Reducer(
         }
     }
 
-    private fun Landmark.toCsvRow(frame: UInt): CsvRow {
-        return CsvRow(
+    private fun Landmark.toFrameLandmark(frame: UInt): FrameLandmark {
+        return FrameLandmark(
             frame = frame,
             landmark = this
         )
