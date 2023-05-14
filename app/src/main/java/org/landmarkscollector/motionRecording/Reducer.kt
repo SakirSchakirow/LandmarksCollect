@@ -182,12 +182,15 @@ internal class Reducer(
                         currentState.copy(
                             facePoseFramesQueue = currentState.facePoseFramesQueue.apply {
                                 add(
-                                    mutableMapOf<RowId, FrameLandmark>().apply {
-                                        with(event.result) {
-                                            (poseLandmarks + faceLandmarks).asSequence()
-                                                .map { mark -> mark.toFrameLandmark(frame) }
-                                                .onEach { mark -> put(mark.rowId, mark) }
-                                        }
+                                    buildMap {
+                                        putAll(
+                                            with(event.result) {
+                                                (poseLandmarks + faceLandmarks).asSequence()
+                                                    .map { mark -> mark.toFrameLandmark(frame) }
+                                                    .map { mark -> mark.rowId to mark }
+                                                    .toList()
+                                            }
+                                        )
                                     }
                                 )
                             }
@@ -261,12 +264,15 @@ internal class Reducer(
                         currentState.copy(
                             facePoseFramesQueue = currentState.handsFramesQueue.apply {
                                 add(
-                                    mutableMapOf<RowId, FrameLandmark>().apply {
-                                        event.handsResults
-                                            .asSequence()
-                                            .flatten()
-                                            .map { mark -> mark.toFrameLandmark(frame) }
-                                            .onEach { mark -> put(mark.rowId, mark) }
+                                    buildMap {
+                                        putAll(
+                                            event.handsResults
+                                                .asSequence()
+                                                .flatten()
+                                                .map { mark -> mark.toFrameLandmark(frame) }
+                                                .map { mark -> mark.rowId to mark }
+                                                .toList()
+                                        )
                                     }
                                 )
                             }
