@@ -49,12 +49,12 @@ fun MotionDisplay() {
         }
     }
 
-
     var frames: List<Frame> by remember { mutableStateOf(emptyList()) }
 
     var previousMotionAnimation: Job? = null
 
     LaunchedEffect(frames) {
+
         previousMotionAnimation?.cancelAndJoin()
         previousMotionAnimation = launch {
             if (isActive) {
@@ -148,4 +148,18 @@ fun MotionDisplay() {
             Text("Set Csv", fontSize = 25.sp)
         }
     }
+}
+
+private fun List<Frame>.getGestureTensorOrNull(): Array<FloatArray>? {
+    // (30, 1086)
+    val frames = take(30)
+        .map { frame ->
+            frame.landmarks.map { mark ->
+                with(mark) {
+                    listOf(x, y)
+                }
+            }.flatten()
+        }.map(List<Float>::toFloatArray)
+        .toTypedArray()
+    return if (frames.size == 30 && frames.all { row -> row.size == 1086 }) frames else null
 }

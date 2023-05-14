@@ -4,7 +4,7 @@ import com.opencsv.CSVWriterBuilder
 import com.opencsv.ICSVWriter
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
-import org.landmarkscollector.data.CsvRow
+import org.landmarkscollector.data.FrameLandmark
 import org.landmarkscollector.data.Resource
 import org.landmarkscollector.domain.model.GenerateInfo
 import org.landmarkscollector.domain.repository.DataConverter
@@ -19,7 +19,7 @@ class DataConverterCSV : DataConverter {
     }
 
     override fun convertSensorData(
-        exportDataList: List<CsvRow>
+        exportDataList: List<FrameLandmark>
     ): Flow<Resource<GenerateInfo>> = flow {
         emit(Resource.Loading(GenerateInfo()))
         val writer = StringWriter()

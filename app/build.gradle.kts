@@ -36,6 +36,10 @@ android {
     kotlinOptions {
         jvmTarget = "1.8"
     }
+    androidResources {
+        noCompress.add("tflite")
+        noCompress.add("lite")
+    }
     buildFeatures {
         compose = true
     }
@@ -67,6 +71,9 @@ dependencies {
     implementation("androidx.camera:camera-video:$cameraxVersion")
     implementation("androidx.camera:camera-view:$cameraxVersion")
     implementation("androidx.camera:camera-extensions:$cameraxVersion")
+
+    implementation("org.tensorflow:tensorflow-lite:2.12.0")
+    implementation("org.tensorflow:tensorflow-lite-select-tf-ops:2.12.0")
 
     // MediaPipe Library
     implementation("com.google.mediapipe:tasks-vision:0.1.0-alpha-5")

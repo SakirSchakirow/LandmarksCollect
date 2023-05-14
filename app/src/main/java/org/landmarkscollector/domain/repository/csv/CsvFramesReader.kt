@@ -3,7 +3,7 @@ package org.landmarkscollector.domain.repository.csv
 import com.opencsv.CSVParser
 import com.opencsv.CSVReader
 import com.opencsv.CSVReaderBuilder
-import org.landmarkscollector.data.CsvRow
+import org.landmarkscollector.data.FrameLandmark
 import org.landmarkscollector.data.Frame
 import org.landmarkscollector.data.Landmark
 import org.landmarkscollector.domain.repository.FramesReader
@@ -26,7 +26,7 @@ class CsvFramesReader : FramesReader {
         return csvReader.asSequence()
             .map { row ->
                 val (frame, landmarkIndex, rowId, type, x, y, z) = row
-                CsvRow(
+                FrameLandmark(
                     frame = frame.toUInt(),
                     landmarkIndex = landmarkIndex.toUInt(),
                     rowId = rowId,
@@ -36,13 +36,13 @@ class CsvFramesReader : FramesReader {
                     z = z.toFloatOrNull()
                 )
             }
-            .groupBy(CsvRow::frame)
-            .map { (frameNumber, csvRows) ->
-                Frame(frameNumber, csvRows.mapNotNull(::toLandmark))
+            .groupBy(FrameLandmark::frame)
+            .map { (frameNumber, rows) ->
+                Frame(frameNumber, rows.mapNotNull(::toLandmark))
             }
     }
 
-    private fun toLandmark(row: CsvRow): Landmark? = with(row) {
+    private fun toLandmark(row: FrameLandmark): Landmark? = with(row) {
         return if (x != null && y != null && z != null) {
             when (type) {
                 Landmark.LandmarkType.RightHand.label -> Landmark.Hand.Right(landmarkIndex, x, y, z)

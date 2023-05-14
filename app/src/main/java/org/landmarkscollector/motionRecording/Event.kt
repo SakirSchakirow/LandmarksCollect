@@ -49,5 +49,7 @@ internal sealed interface Event {
         object RecordingSaved : Internal
 
         class WaitingForTheNextMotionRecording(val delayTicks: UInt) : Internal
+
+        class GesturesRate(val rates: Map<String, Float>) : Internal
     }
 }

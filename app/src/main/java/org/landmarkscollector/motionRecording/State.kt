@@ -1,7 +1,11 @@
 package org.landmarkscollector.motionRecording
 
 import android.net.Uri
+import com.google.common.collect.EvictingQueue
+import org.landmarkscollector.data.FrameLandmark
+import org.landmarkscollector.data.Landmark
 import org.landmarkscollector.data.LandmarksRecording
+import org.landmarkscollector.data.RowId
 import org.landmarkscollector.motionRecording.CamerasInfo.CamerasAvailable
 
 internal sealed interface State {
@@ -32,7 +36,18 @@ internal sealed interface State {
                 override val isOneHandGesture: Boolean = false,
                 override val isGpuEnabled: Boolean = false,
                 override val camera: CamerasAvailable,
+                val handsFramesQueue: EvictingQueue<Map<RowId, FrameLandmark>> = EvictingQueue.create(
+                    DETECTION_FRAME_BUFFER_SIZE.toInt()
+                ),
+                val facePoseFramesQueue: EvictingQueue<Map<RowId, FrameLandmark>> = EvictingQueue.create(
+                    DETECTION_FRAME_BUFFER_SIZE.toInt()
+                ),
+                val gestureRates: Map<String, Float> = emptyMap(),
             ) : Steady() {
+
+                companion object {
+                    const val DETECTION_FRAME_BUFFER_SIZE = 30u
+                }
 
                 override fun copy(
                     isOneHandGesture: Boolean,

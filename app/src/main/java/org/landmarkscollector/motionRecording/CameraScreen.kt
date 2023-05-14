@@ -17,7 +17,9 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.Button
@@ -51,6 +53,7 @@ import org.landmarkscollector.motionRecording.CamerasInfo.CamerasAvailable.OnlyB
 import org.landmarkscollector.motionRecording.CamerasInfo.CamerasAvailable.OnlyFacing
 import org.landmarkscollector.motionRecording.State.LiveCamera.Steady
 import org.landmarkscollector.motionRecording.State.LiveCamera.Steady.ReadyToStartRecording
+import org.landmarkscollector.motionRecording.State.LiveCamera.Steady.WaitingForDirectoryAndGesture
 import java.util.concurrent.Executors
 import kotlin.coroutines.resume
 import kotlin.coroutines.suspendCoroutine
@@ -392,6 +395,22 @@ internal fun Steady(
                 "Gesture will be recorded in files: ${state.gestureName}_N.csv",
                 fontSize = 16.sp
             )
+        }
+        if (state is WaitingForDirectoryAndGesture) {
+            Column {
+                state.gestureRates.map { (gesture, rate) ->
+                    Row {
+                        Text(
+                            text = gesture,
+                            fontSize = 20.sp
+                        )
+                        Text(
+                            text = ": $rate",
+                            fontSize = 20.sp
+                        )
+                    }
+                }
+            }
         }
     }
 }
