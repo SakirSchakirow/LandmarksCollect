@@ -38,7 +38,7 @@ class CsvFramesReader : FramesReader {
             }
             .groupBy(FrameLandmark::frame)
             .map { (frameNumber, rows) ->
-                Frame(frameNumber, rows.mapNotNull(::toLandmark))
+                Frame(frameNumber, rows.map(::toLandmark))
             }
     }
 
