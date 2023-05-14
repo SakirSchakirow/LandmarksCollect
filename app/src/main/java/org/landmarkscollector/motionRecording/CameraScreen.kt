@@ -17,9 +17,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.Button
@@ -54,6 +52,7 @@ import org.landmarkscollector.motionRecording.CamerasInfo.CamerasAvailable.OnlyF
 import org.landmarkscollector.motionRecording.State.LiveCamera.Steady
 import org.landmarkscollector.motionRecording.State.LiveCamera.Steady.ReadyToStartRecording
 import org.landmarkscollector.motionRecording.State.LiveCamera.Steady.WaitingForDirectoryAndGesture
+import org.landmarkscollector.ui.components.RatesColumn
 import java.util.concurrent.Executors
 import kotlin.coroutines.resume
 import kotlin.coroutines.suspendCoroutine
@@ -308,109 +307,98 @@ internal fun Steady(
     onGestureNameChanged: (gestureName: String) -> Unit,
     onStartRecordingPressed: () -> Unit,
 ) {
-    Column(horizontalAlignment = Alignment.End) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Text(
-                "${if (state.camera.isCurrentFrontFacing) "Front 🤳" else "Back 📸"} camera",
-                fontSize = 20.sp
+    Column {
+        Column(horizontalAlignment = Alignment.End) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(
+                    "${if (state.camera.isCurrentFrontFacing) "Front 🤳" else "Back 📸"} camera",
+                    fontSize = 20.sp
+                )
+                Spacer(modifier = Modifier.size(12.dp))
+                if (state.camera is AllTypes) {
+                    Switch(
+                        checked = state.camera.isCurrentFrontFacing,
+                        onCheckedChange = onCameraToggle
+                    )
+                }
+            }
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(
+                    "Hands detected: ${if (state.isOneHandGesture) "One 🖐️" else "Two 🙌"}",
+                    fontSize = 20.sp
+                )
+                Spacer(modifier = Modifier.size(12.dp))
+                Switch(
+                    checked = state.isOneHandGesture,
+                    onCheckedChange = onHandsToggle
+                )
+            }
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(
+                    "${if (state.isGpuEnabled) "GPU 🖼️" else "CPU 🧮"} used",
+                    fontSize = 20.sp
+                )
+                Spacer(modifier = Modifier.size(12.dp))
+                Switch(
+                    checked = state.isGpuEnabled,
+                    onCheckedChange = onGpuToggle
+                )
+            }
+            var gestureName by remember { mutableStateOf("") }
+            val pickPathLauncher = rememberLauncherForActivityResult(
+                contract = ActivityResultContracts.OpenDocumentTree(),
+                onResult = { uri ->
+                    if (uri != null) {
+                        onDirectoryChosen(uri)
+                    }
+                }
             )
             Spacer(modifier = Modifier.size(12.dp))
-            if (state.camera is AllTypes) {
-                Switch(
-                    checked = state.camera.isCurrentFrontFacing,
-                    onCheckedChange = onCameraToggle
+            Button(onClick = {
+                pickPathLauncher.launch(null)
+            }) {
+                val action = if (state is ReadyToStartRecording)
+                    "Change"
+                else
+                    "Choose"
+                Text("$action directory to save CSVs", fontSize = 25.sp)
+            }
+            Spacer(modifier = Modifier.size(12.dp))
+            val focusManager = LocalFocusManager.current
+            OutlinedTextField(
+                value = gestureName,
+                maxLines = 1,
+                onValueChange = { text ->
+                    gestureName = text
+                    onGestureNameChanged(text)
+                },
+                label = { Text("Gesture Name (.csv file name)") },
+                keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
+                keyboardActions = KeyboardActions(
+                    onDone = { focusManager.clearFocus() }
+                )
+            )
+            Spacer(modifier = Modifier.size(12.dp))
+            if (state is ReadyToStartRecording) {
+                Button(
+                    onClick = onStartRecordingPressed
+                ) {
+                    Text("Start Recording", fontSize = 25.sp)
+                }
+                Spacer(modifier = Modifier.size(12.dp))
+                Text(
+                    "Gesture-directory path: ${state.directoryUri.path}",
+                    fontSize = 16.sp
+                )
+                Spacer(modifier = Modifier.size(12.dp))
+                Text(
+                    "Gesture will be recorded in files: ${state.gestureName}_N.csv",
+                    fontSize = 16.sp
                 )
             }
         }
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Text(
-                "Hands detected: ${if (state.isOneHandGesture) "One 🖐️" else "Two 🙌"}",
-                fontSize = 20.sp
-            )
-            Spacer(modifier = Modifier.size(12.dp))
-            Switch(
-                checked = state.isOneHandGesture,
-                onCheckedChange = onHandsToggle
-            )
-        }
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Text(
-                "${if (state.isGpuEnabled) "GPU 🖼️" else "CPU 🧮"} used",
-                fontSize = 20.sp
-            )
-            Spacer(modifier = Modifier.size(12.dp))
-            Switch(
-                checked = state.isGpuEnabled,
-                onCheckedChange = onGpuToggle
-            )
-        }
-        var gestureName by remember { mutableStateOf("") }
-        val pickPathLauncher = rememberLauncherForActivityResult(
-            contract = ActivityResultContracts.OpenDocumentTree(),
-            onResult = { uri ->
-                if (uri != null) {
-                    onDirectoryChosen(uri)
-                }
-            }
-        )
-        Spacer(modifier = Modifier.size(12.dp))
-        Button(onClick = {
-            pickPathLauncher.launch(null)
-        }) {
-            val action = if (state is ReadyToStartRecording)
-                "Change"
-            else
-                "Choose"
-            Text("$action directory to save CSVs", fontSize = 25.sp)
-        }
-        Spacer(modifier = Modifier.size(12.dp))
-        val focusManager = LocalFocusManager.current
-        OutlinedTextField(
-            value = gestureName,
-            maxLines = 1,
-            onValueChange = { text ->
-                gestureName = text
-                onGestureNameChanged(text)
-            },
-            label = { Text("Gesture Name (.csv file name)") },
-            keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
-            keyboardActions = KeyboardActions(
-                onDone = { focusManager.clearFocus() }
-            )
-        )
-        Spacer(modifier = Modifier.size(12.dp))
-        if (state is ReadyToStartRecording) {
-            Button(
-                onClick = onStartRecordingPressed
-            ) {
-                Text("Start Recording", fontSize = 25.sp)
-            }
-            Spacer(modifier = Modifier.size(12.dp))
-            Text(
-                "Gesture-directory path: ${state.directoryUri.path}",
-                fontSize = 16.sp
-            )
-            Spacer(modifier = Modifier.size(12.dp))
-            Text(
-                "Gesture will be recorded in files: ${state.gestureName}_N.csv",
-                fontSize = 16.sp
-            )
-        }
         if (state is WaitingForDirectoryAndGesture) {
-            Column {
-                state.gestureRates.map { (gesture, rate) ->
-                    Row {
-                        Text(
-                            text = gesture,
-                            fontSize = 20.sp
-                        )
-                        Text(
-                            text = ": $rate",
-                            fontSize = 20.sp
-                        )
-                    }
-                }
-            }
+            RatesColumn(rates = state.gestureRates)
         }
     }
 }

@@ -5,8 +5,6 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.Button
 import androidx.compose.material3.Text
@@ -34,6 +32,7 @@ import org.landmarkscollector.hands.OverlayView
 import org.landmarkscollector.mlkit.GraphicOverlay
 import org.landmarkscollector.mlkit.face.FaceMeshGraphic
 import org.landmarkscollector.mlkit.pose.PoseGraphic
+import org.landmarkscollector.ui.components.RatesColumn
 import org.tensorflow.lite.Interpreter
 import java.io.FileInputStream
 import java.io.IOException
@@ -204,22 +203,7 @@ fun MotionDisplay() {
         }) {
             Text("Set Csv", fontSize = 25.sp)
         }
-        Column {
-            gestureDetectionResults.map { (gesture, rate) ->
-                Row {
-                    Text(
-                        text = gesture,
-                        color = Color.White,
-                        fontSize = 20.sp
-                    )
-                    Text(
-                        text = ": $rate",
-                        color = Color.White,
-                        fontSize = 20.sp
-                    )
-                }
-            }
-        }
+        RatesColumn(gestureDetectionResults)
     }
 }
 
