@@ -57,38 +57,32 @@ internal class Actor(
 
             val interpreter = interpreter()
 
-            Log.d("Interpreter", "inputTensorCount:${interpreter.inputTensorCount}")
-            Log.d("Interpreter", "outputTensorCount:${interpreter.outputTensorCount}")
-
             interpreter.run(arrayOf(tensor), output)
 
             val result = output[0]
 
             val labels = listOf(
-                "дела",
                 "день",
-                "до свидания",
-                "добрый",
-                "добрый день",
                 "здравствуйте",
                 "нормально",
-                "пожалуйста",
                 "спасибо",
+                "я",
+                "дела",
+                "добрый",
+                "пожалуйста",
                 "хорошо",
-                "я"
+                "до свидания",
+                "добрый день",
             )
-
-            val results = buildMap {
-                result.mapIndexed { index, prob ->
-                    put(labels[index], prob)
-                }
-            }
             emit(
                 GesturesRate(
-                    results
+                    buildMap {
+                        result.mapIndexed { index, prob ->
+                            put(labels[index], prob)
+                        }
+                    }
                 )
             )
-            Log.d("ResultInter", results.toList().toString())
         }
 
         is Command.SaveRecording -> flow {
