@@ -5,6 +5,7 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.Button
 import androidx.compose.material3.Text
@@ -125,7 +126,6 @@ fun MotionDisplay() {
             }
         }
     }
-
     Box(
         modifier = Modifier
             .background(Color.Black)
@@ -196,14 +196,16 @@ fun MotionDisplay() {
                 }
             }
         )
-        Button(onClick = {
-            pickFileLauncher.launch(
-                arrayOf("text/*")
-            )
-        }) {
-            Text("Set Csv", fontSize = 25.sp)
+        Column {
+            Button(onClick = {
+                pickFileLauncher.launch(
+                    arrayOf("text/*")
+                )
+            }) {
+                Text("Set Csv", fontSize = 25.sp)
+            }
+            RatesColumn(gestureDetectionResults)
         }
-        RatesColumn(gestureDetectionResults)
     }
 }
 
