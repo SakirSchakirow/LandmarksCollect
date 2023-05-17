@@ -33,6 +33,7 @@ import org.landmarkscollector.hands.OverlayView
 import org.landmarkscollector.mlkit.GraphicOverlay
 import org.landmarkscollector.mlkit.face.FaceMeshGraphic
 import org.landmarkscollector.mlkit.pose.PoseGraphic
+import org.landmarkscollector.motionRecording.State.LiveCamera.Steady.WaitingForDirectoryAndGesture.Companion.DETECTION_FRAME_BUFFER_SIZE
 import org.landmarkscollector.ui.components.RatesColumn
 import org.tensorflow.lite.Interpreter
 import java.io.FileInputStream
@@ -149,6 +150,7 @@ fun MotionDisplay() {
                         .openInputStream(uri)!!
                         .use {
                             framesOfCsv = reader.readFrames(it)
+                                .take(DETECTION_FRAME_BUFFER_SIZE.toInt())
 
                             framesOfCsv.toGestureTensorOrNull()
                                 ?.let { tensor ->
@@ -218,7 +220,7 @@ private fun List<Frame>.toGestureTensorOrNull(): Array<FloatArray>? {
             }.flatten()
         }.map(List<Float>::toFloatArray)
         .toTypedArray()
-    return if (frames.size == 30 && frames.all { row -> row.size == 1086 }) frames else null
+    return if (frames.size == DETECTION_FRAME_BUFFER_SIZE.toInt() && frames.all { row -> row.size == 1086 }) frames else null
 }
 
 @Throws(IOException::class)
