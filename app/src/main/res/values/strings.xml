@@ -1,3 +1,4 @@
 <resources>
     <string name="app_name">LandmarksCollector</string>
+    <string name="subapp_name">DisplayLandmarks</string>
 </resources>
