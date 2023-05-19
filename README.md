@@ -7,7 +7,7 @@ landmarks of hands, pose and facemesh
 Since the app is in active development, it is currently not in Google Play, but is available for download from this repository.
 Download the `.apk`-file and install on your Android device as regular.
 
-### LandmarksCollect app [<img alt="LandmarksCollect-app" width="70px" src="./app/src/main/res/mipmap-xxxhdpi/ic_launcher.webp" />](./app/src/main/app-debug.apk)
+### LandmarksCollect app [<img alt="LandmarksCollect-app" width="70px" src="./app/src/main/res/mipmap-xxxhdpi/ic_launcher.webp" />](https://drive.google.com/uc?id=1V-QoQ7__jPD-DpyExHn4-OCYDkmnuDBa&export=download)
 
 ## Collect anywhere anytime
 
