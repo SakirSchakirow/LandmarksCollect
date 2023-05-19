@@ -3,6 +3,12 @@
 Android App to collect hands, pose and facemesh landmarkers in the format of Google MediaPipe
 landmarks of hands, pose and facemesh
 
+## Application
+Since the app is in active development, it is currently not in Google Play, but is available for download from this repository.
+Download the `.apk`-file and install on your Android device as regular.
+
+### LandmarksCollect app [<img alt="LandmarksCollect-app" width="70px" src="./app/src/main/res/mipmap-xxxhdpi/ic_launcher.webp" />](./app/src/main/app-debug.apk)
+
 ## Collect anywhere anytime
 
 1) Choose front or back camera
